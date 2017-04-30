@@ -73,7 +73,7 @@ def embed_phrase(phrase):
 
 
 def embed_counts_matrix():
-    ans_embed = np.zeros((len(ans_counts), embeddings.shape[1]))
+    ans_embed = np.zeros((ans_counts.shape[0], embeddings.shape[1]))
     for i, counts_vec in enumerate(ans_counts):
         mots = np.argwhere(counts_vec).ravel()
         for m in mots:
@@ -114,7 +114,6 @@ ans_id, ans_question, ans_body = load_answers()
 vectorizer = sklearn.feature_extraction.text.CountVectorizer(encoding='utf-16', stop_words=stopwords,
                                                              vocabulary=word_id)
 ans_counts = vectorizer.transform(ans_body)
-ans_counts = ans_counts.toarray()
 print('Embedding answers...')
 ans_embed = embed_counts_matrix()
 
