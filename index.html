@@ -18,8 +18,16 @@
 
     <h2>Effectuez une recherche dans les données ouvertes du projet <a href="http://fautquonseparle.org"><i>Faut qu'on se parle</i></a>.</h2>
 
+    <p>Lors du projet <i>Faut qu'on se parle</i>, 10 questions ont été posées aux Québécoises et Québécois.</p>
+    <p>5357 réponses ont été amassées, et ont été rendues publiques... dans un classeur <i>Excel</i>.</p>
+    <p>Voici un outil qui vous permettra d'effectuer facilement une recherche dans ces données. Ces données sont brutes:
+    vous y trouverez beaucoup de fautes de français, ce qui pourrait limiter l'entendue de la recherche. Je compte
+    éventuellement modifier l'algorithme de recherche pour qu'il soit tolérant aux fautes d'orthographe. En attendant
+    d'avoir un gouvernement qui valorise l'éducation, il va falloir tolérer ces fautes! ;)</p>
+
     <form method="get">
-      <input type="text" id="search-box" name="query" placeholder="Entrez votre requête ici">
+        <label for="search-box">Votre requête: </label>
+        <input type="text" id="search-box" name="query" placeholder="">
       <input type="submit" value="chercher">
     </form>
 

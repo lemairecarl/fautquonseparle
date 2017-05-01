@@ -15,3 +15,11 @@ li .qlabel .aid {
     margin-left: 2em;
     color: #bbb;
 }
+
+body p {
+    max-width: 40em;
+}
+
+form label {
+    font-weight: bold;
+}
