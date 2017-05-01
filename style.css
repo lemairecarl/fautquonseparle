@@ -1,0 +1,17 @@
+#search-results {
+    margin-top: 3em
+}
+
+li {
+    margin-bottom: 1.6em;
+}
+
+li .qlabel {
+    color: blue;
+    margin-bottom: 0.3em;
+}
+
+li .qlabel .aid {
+    margin-left: 2em;
+    color: #bbb;
+}

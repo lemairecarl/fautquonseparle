@@ -5,17 +5,34 @@
 function displaySearchResults(results, csvdata) {
     var searchResults = document.getElementById('search-results');
 
+    var question_labels = {
+        7: "Comment se remettre en marche?",
+        8: "Comment permettre à tout le monde de réaliser son plein potentiel?",
+        13: "Comment enclencher la transition?",
+        4: "Comment reprendre le pouvoir?",
+        5: "Comment développer le Québec selon nos priorités?",
+        12: "Comment prendre soin de tout le monde?",
+        9: "Comment construire la solidarité entre nous?",
+        11: "Comment favoriser une création artistique vivante et en assurer l’accès à tous?",
+        10: "Comment vivre ensemble sans racisme ni discrimination?",
+        6: "Comment dynamiser toutes nos communautés?",
+        14: "On a oublié quelque chose?",
+        15: "(Question manquante)",
+        17: "(Question manquante)",
+        16: "(Question manquante)"
+    };
+
     if (results.length) { // Are there any results?
       var appendString = '';
 
       for (var i = 0; i < results.length; i++) {  // Iterate over the results
-        var text = csvdata[results[i].ref];
-        appendString += '<li>' + text + '</li>';
+        var item = csvdata[results[i].ref];
+        appendString += '<li><div class="qlabel">' + question_labels[item.q_id] + '<span class="aid">#' + item.id + '</span></div>' + item.text + '</li>';
       }
 
       searchResults.innerHTML = appendString;
     } else {
-      searchResults.innerHTML = '<li>No results found</li>';
+      searchResults.innerHTML = '<li>Aucun résultat, vérifiez votre requête.</li>';
     }
 }
 
@@ -50,10 +67,11 @@ $(document).ready(function() {
                     this.field('text');
 
                     for (var key in csvdata) {
-                        this.add({"id": key, "text": csvdata[key]})
+                        this.add(csvdata[key])
                     }
                 });
 
+                document.getElementById('search-box').setAttribute("placeholder", "");
                 document.getElementById('search-box').setAttribute("value", searchTerm);
 
                 var results = idx.search(searchTerm); // Get lunr to perform a search
