@@ -42,7 +42,7 @@ form {
     margin-top: 3em;
     padding:0.5em;
     border:2px solid #1eb1cc;
-    max-width: 40em;
+    max-width: 50em;
 }
 
 form label {
@@ -50,5 +50,5 @@ form label {
 }
 
 form input#search-box {
-    width: 35em;
+    width: 40em;
 }
