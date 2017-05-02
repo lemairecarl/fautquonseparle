@@ -2,8 +2,13 @@
   Adapted from: http://jekyll.tips/jekyll-casts/jekyll-search-using-lunr-js/
 */
 
+function jump(h){
+    var top = document.getElementById(h).offsetTop; //Getting Y of target element
+    window.scrollTo(0, top);                        //Go there directly or some transition
+}
+
 function displaySearchResults(results, csvdata) {
-    var searchResults = document.getElementById('search-results');
+    var searchResults = document.getElementById('results');
 
     var question_labels = {
         7: "Indépendance: Comment se remettre en marche?",
@@ -27,12 +32,12 @@ function displaySearchResults(results, csvdata) {
 
       for (var i = 0; i < results.length; i++) {  // Iterate over the results
         var item = csvdata[results[i].ref];
-        appendString += '<li><div class="qlabel">' + question_labels[item.q_id] + '<span class="aid">#' + item.id + '</span></div>' + item.text + '</li>';
+        appendString += '<li><div class="qlabel">' + question_labels[item.q_id] + '<span class="aid">Rép. #' + item.id + '</span></div><p>' + item.text + '</p></li>';
       }
 
-      searchResults.innerHTML = appendString;
+      searchResults.innerHTML = '<h3>Résultats :</h3><ul id="search-results">' + appendString + '</ul>';
     } else {
-      searchResults.innerHTML = '<li>Aucun résultat, vérifiez votre requête.</li>';
+      searchResults.innerHTML = '<h3>Aucun résultat, vérifiez votre requête.</h3>';
     }
 }
 
@@ -50,9 +55,11 @@ function getQueryVariable(variable) {
 }
 
 $(document).ready(function() {
-    var searchTerm = getQueryVariable('query');
+    var searchTerm = getQueryVariable('requete');
 
     if (searchTerm) {
+        document.getElementById('results').innerHTML = '<h3>Veuillez patienter...</h3>';
+
         $.ajax({
             type: "GET",
             url: "fautquonseparle.txt",
@@ -76,6 +83,8 @@ $(document).ready(function() {
 
                 var results = idx.search(searchTerm); // Get lunr to perform a search
                 displaySearchResults(results, csvdata); // We'll write this in the next section
+
+                jump("champrecherche");
             }
         });
     }

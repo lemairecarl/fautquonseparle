@@ -1,25 +1,54 @@
+body {
+    background-color: #dee;
+    margin: 2em;
+}
+
+
+
 #search-results {
-    margin-top: 3em
+    margin-top: 1.6em
 }
 
-li {
-    margin-bottom: 1.6em;
+ul#search-results {
+    list-style-type: none;
+    margin: 0;
+    padding-left: 0;
 }
 
-li .qlabel {
-    color: blue;
-    margin-bottom: 0.3em;
+ul#search-results li {
+    margin-bottom: 1em;
+    padding:1em;
+    background-color: white;
 }
 
-li .qlabel .aid {
+ul#search-results li .qlabel {
+    display: inline-block;
+    margin-bottom: 0.2em;
+    padding-bottom: 0.2em;
+    border-bottom: 2px solid #1eb1cc;
+    font-style: italic;
+}
+
+ul#search-results li .qlabel .aid {
     margin-left: 2em;
     color: #bbb;
 }
 
-body p {
+ul#search-results li p {
+    margin: 0;
+}
+
+form {
+    margin-top: 3em;
+    padding:0.5em;
+    border:2px solid #1eb1cc;
     max-width: 40em;
 }
 
 form label {
     font-weight: bold;
+}
+
+form input#search-box {
+    width: 35em;
 }
