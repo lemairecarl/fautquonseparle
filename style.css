@@ -39,10 +39,10 @@ ul#search-results li p {
 }
 
 form {
-    margin-top: 3em;
+    display: inline-block;
+    margin-top: 2em;
     padding:0.5em;
     border:2px solid #1eb1cc;
-    max-width: 50em;
 }
 
 form label {
