@@ -38,17 +38,17 @@ ul#search-results li p {
     margin: 0;
 }
 
-form {
+#champrecherche {
     display: inline-block;
     margin-top: 2em;
     padding:0.5em;
     border:2px solid #1eb1cc;
 }
 
-form label {
+#champrecherche label {
     font-weight: bold;
 }
 
-form input#search-box {
+#champrecherche input#search-box {
     width: 40em;
 }

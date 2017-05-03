@@ -1,6 +1,3 @@
-- changer couleur (bleu donne l'impression que c'est des liens)
-- éviter de recharger et réindexer à chaque recherche (AJAX this shit)
-
 - ACCENTS
 - clustering de réponses
 - Trouver des questions similaires

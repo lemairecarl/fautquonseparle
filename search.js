@@ -2,11 +2,6 @@
   Adapted from: http://jekyll.tips/jekyll-casts/jekyll-search-using-lunr-js/
 */
 
-function jump(h){
-    var top = document.getElementById(h).offsetTop; //Getting Y of target element
-    window.scrollTo(0, top);                        //Go there directly or some transition
-}
-
 function displaySearchResults(results, csvdata) {
     var searchResults = document.getElementById('results');
 
@@ -54,38 +49,40 @@ function getQueryVariable(variable) {
     }
 }
 
+function lancerRecherche() {
+    recherche_lancee = true;
+
+    document.getElementById('results').innerHTML = '<h3>Veuillez patienter...</h3>';
+
+    if (idx == null) return;
+
+    var results = idx.search($('#search-box').val()); // Get lunr to perform a search
+    displaySearchResults(results, csvdata); // We'll write this in the next section
+}
+
 $(document).ready(function() {
-    var searchTerm = getQueryVariable('requete');
+    idx = null
+    recherche_lancee = false;
 
-    if (searchTerm) {
-        document.getElementById('results').innerHTML = '<h3>Veuillez patienter...</h3>';
+    $.ajax({
+        type: "GET",
+        url: "fautquonseparle.txt",
+        dataType: "text",
+        success: function(data) {
+            csvdata = loadCsv(data);
 
-        $.ajax({
-            type: "GET",
-            url: "fautquonseparle.txt",
-            dataType: "text",
-            success: function(data) {
-                csvdata = loadCsv(data);
+            idx = lunr(function () {
+                this.use(lunr.fr);
+                // then, the normal lunr index initialization
+                this.ref('id')
+                this.field('text');
 
-                idx = lunr(function () {
-                    this.use(lunr.fr);
-                    // then, the normal lunr index initialization
-                    this.ref('id')
-                    this.field('text');
+                for (var key in csvdata) {
+                    this.add(csvdata[key])
+                }
+            });
 
-                    for (var key in csvdata) {
-                        this.add(csvdata[key])
-                    }
-                });
-
-                document.getElementById('search-box').setAttribute("placeholder", "");
-                document.getElementById('search-box').setAttribute("value", searchTerm);
-
-                var results = idx.search(searchTerm); // Get lunr to perform a search
-                displaySearchResults(results, csvdata); // We'll write this in the next section
-
-                jump("champrecherche");
-            }
-        });
-    }
+            if (recherche_lancee) lancerRecherche();
+        }
+    });
 });
