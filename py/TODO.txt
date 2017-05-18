@@ -1,0 +1,15 @@
+- lunr
+    - ACCENTS
+    - ajuster impact frequence relative
+    - chercher par catégorie
+- classification des questions
+    - inputs: tfidf + word2vec sum
+    - hyperparam search: n. layers, layer dim.
+- t-SNE  ou  clustering de réponses
+    - word2vec - fautes d'orthographe
+    - doc2vec, docNADE (encodage sémantique vs. topic)
+    - t-SNE
+    - clustering
+- Trouver des questions similaires
+- Travailler avec les fautes d'orthographe
+- stemming

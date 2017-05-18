@@ -20,7 +20,7 @@ def load_answers():
     ans_id = []
     ans_question = []
     ans_body = []
-    with open('fautquonseparle.txt', 'r', encoding='utf-16') as f:
+    with open('fautquonseparle.txt', 'r', encoding='utf-8') as f:
         for ligne in f.readlines():
             if ligne.strip() == '':
                 continue
@@ -111,12 +111,20 @@ words, word_id, id_word, embeddings = load_embeddings()
 ans_id, ans_question, ans_body = load_answers()
 
 # Texts to matrix of representations
-vectorizer = sklearn.feature_extraction.text.CountVectorizer(encoding='utf-16', stop_words=stopwords,
+vectorizer = sklearn.feature_extraction.text.CountVectorizer(encoding='utf-8', stop_words=stopwords,
                                                              vocabulary=word_id)
 ans_counts = vectorizer.transform(ans_body)
 print('Embedding answers...')
 ans_embed = embed_counts_matrix()
 
+# Save embeddings
+with open('w2v.pkl', 'wb') as f:
+    pickle.dump(ans_embed, f, pickle.HIGHEST_PROTOCOL)
+
+# Save fqsp data
+with open('fqsp.pkl', 'wb') as f:
+    o = (ans_id, ans_question, ans_body)
+    pickle.dump(o, f, pickle.HIGHEST_PROTOCOL)
 
 while True:
     print('')

@@ -1,5 +1,0 @@
-- ACCENTS
-- clustering de réponses
-- Trouver des questions similaires
-- Travailler avec les fautes d'orthographe
-- stemming
