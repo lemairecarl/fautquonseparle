@@ -66,7 +66,7 @@ $(document).ready(function() {
 
     $.ajax({
         type: "GET",
-        url: "fautquonseparle.txt",
+        url: "py/fautquonseparle.txt",
         dataType: "text",
         success: function(data) {
             csvdata = loadCsv(data);
