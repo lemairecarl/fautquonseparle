@@ -49,6 +49,25 @@ def load_data(batch_size=32):
         'y_test': ans_question_cat[-n_test:]
     }
     
+    for k, v in data.items():
+        print(k, v.shape)
+    
+    # Vérifier qu'il n'y a pas d'overlap
+    print('Vérifier overlap...')
+    def verif_overlap(a, b):
+        nb_cas = 0
+        for i, x1 in enumerate(a):
+            print('\r' + str(i), end='')
+            for x2 in b:
+                if np.all(x1 == x2):
+                    nb_cas += 1
+                    break
+        print('')
+        return nb_cas
+    n_cas_val = verif_overlap(data['X_train'], data['X_val'])
+    n_cas_test = verif_overlap(data['X_train'], data['X_test'])
+    print("Cas d'overlap: Val {}  Test {}".format(n_cas_val, n_cas_test))
+    
     print('Bin count train: ', np.bincount(np.argmax(data['y_train'], axis=1)))
     print('Bin count val:   ', np.bincount(np.argmax(data['y_val'], axis=1)))
     print('Bin count test:  ', np.bincount(np.argmax(data['y_test'], axis=1)))
