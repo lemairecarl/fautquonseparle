@@ -111,15 +111,59 @@ class Embedder:
         self.ans_counts = self.vectorizer.fit_transform(self.ans_body)
         id_to_word = self.vectorizer.get_feature_names()
         word_counts = np.array(np.sum(self.ans_counts, axis=0)).squeeze()
-        #sub_pluriel = {}
+        
+        print('Singulier-pluriel')
+        # Combiner singulier-pluriel. Lorsqu'un mot avec un 's' existe sans 's', combiner avec la version singulier.
+        sub_pluriel = {}  # clef: a remplacer; valeur: remplacer par
+        n_cas = 0
         for i1, w1 in enumerate(id_to_word):
             if w1[-1] != 's':
                 continue
             for i2, w2 in enumerate(id_to_word):
                 if w1[:-1] == w2:
+                    sub_pluriel[i1] = i2
                     word_counts[i2] += word_counts[i1]
                     word_counts[i1] = 0
+                    n_cas += 1
+        print("Cas: " + str(n_cas))
         
+        
+        print("Remplacer les accents absurdes")
+        # Remplacer les accents absurdes þ_
+        wtf = dict(zip('õīęėěūá', 'ôîeéêûâ'))
+        wtf['ľ'] = ''
+        wtf['ď'] = ''
+        wtf['ß'] = 'ss'
+        wtf['æ'] = 'ae'
+        wtf['þ'] = ''
+        wtf['_'] = ''
+        sub_accents = {}
+        n_cas = 0
+        for i1, w1 in enumerate(id_to_word):
+            if any(l in w1 for l in wtf):
+                new_w = None
+                for old, new in wtf.items():
+                    new_w = w1.replace(old, new)
+                if new_w in self.vectorizer.vocabulary_:
+                    new_i = self.vectorizer.vocabulary_[new_w]
+                    sub_accents[i1] = new_i
+                    word_counts[new_i] += word_counts[i1]
+                else:
+                    word_counts[i1] = -1
+                    print('Suppr: ' + w1 + ' (' + new_w + ')')
+                word_counts[i1] = 0
+                n_cas += 1
+        print("Cas: " + str(n_cas))
+        
+        print("Enlever ...")
+        # Vérifier
+        for i1, w1 in enumerate(id_to_word):
+            if word_counts[i1] == 0:
+                continue
+            racine = w1[:-1] if w1[-1] == 's' else w1
+            if any(i not in 'abcdefghijklmnopqrstuvwxyzéèàùçâîêôûœ1234567890' for i in racine[:-1]):
+                print(w1)
+
         print('Avant: ' + str(len(word_counts)))
         sorted_idx = np.argsort(word_counts)
         sorted_counts = word_counts[sorted_idx]
@@ -148,7 +192,7 @@ class Embedder:
 if __name__ == '__main__':
     embedder = Embedder()
     
-    while True:
-        print('')
-        q = input('Requête: ')
-        embedder.print_similar_to_query(q)
+    #while True:
+    #    print('')
+    #    q = input('Requête: ')
+    #    embedder.print_similar_to_query(q)

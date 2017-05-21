@@ -1,4 +1,5 @@
 - ACCENTS
+    X Remplacer les accents exotiques de marde
     - Ajouter au vocabulaire les mots sans accents, lorsqu'ils n'existent pas déjà.
 - Pluriel
     - Mots qui existent avec et sans 's': remplacer par la version singulier
