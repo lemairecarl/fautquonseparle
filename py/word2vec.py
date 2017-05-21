@@ -114,6 +114,8 @@ class Embedder:
         id_to_word = self.vectorizer.get_feature_names()
         word_counts = np.array(np.sum(self.ans_counts, axis=0)).squeeze()
         
+        # TODO enlever nombres
+        
         print('Singulier-pluriel')
         # Combiner singulier-pluriel. Lorsqu'un mot avec un 's' existe sans 's', combiner avec la version singulier.
         sub_pluriel = {}  # clef: a remplacer; valeur: remplacer par
@@ -134,12 +136,12 @@ class Embedder:
         wtf = dict(zip('õīęėěūá', 'ôîeéêûâ'))
         wtf['ľ'] = ''
         wtf['ď'] = ''
-        wtf['ß'] = 'ss'
+        wtf['ß'] = ''
         wtf['æ'] = 'ae'
         wtf['þ'] = ''
         wtf['_'] = ''
         wtf['œ'] = 'oe'
-        sub_accents = {}
+        sub_accents_exotiques = {}
         n_cas = 0
         for i1, w1 in enumerate(id_to_word):
             if any(l in w1 for l in wtf):
@@ -148,7 +150,7 @@ class Embedder:
                     new_w = w1.replace(old, new)
                 if new_w in self.vectorizer.vocabulary_:
                     new_i = self.vectorizer.vocabulary_[new_w]
-                    sub_accents[i1] = new_i
+                    sub_accents_exotiques[i1] = new_i
                     word_counts[new_i] += word_counts[i1]
                 else:
                     word_counts[i1] = -1
@@ -167,7 +169,10 @@ class Embedder:
 
         print('Oubli accents')
         # Oubli d'accent
+        accents_exceptions = ['cote', 'eleve', 'forme', 'marque', 'prive']
+        sub_accents = {}
         with open('oubli-accent.txt', 'w') as f:
+            
             for i1, w1 in enumerate(tqdm(id_to_word)):
                 if word_counts[i1] == 0:
                     continue
@@ -177,11 +182,33 @@ class Embedder:
                     if word_counts[i2] == 0:  # TODO optimiser
                         continue
                     # TODO fin de mot: conjuguaison?
-                    if unidecode(w1) == unidecode(w2):
-                        f.write('{:<20} {}\n'.format(w1, w2))
-                        break
+                    uw1, uw2 = unidecode(w1), unidecode(w2)
+                    if uw1 == uw2:
+                        if uw1 in accents_exceptions or uw2 in accents_exceptions:
+                            continue
+                        # 4 cas:
+                        #   w1_oui w2_oui  --> Ne rien faire
+                        #   w1_oui w2_non  --> Créer embed. w2 avec vecteur de w1
+                        #   w1_non w2_oui  --> Créer embed. w1 avec vecteur de w2
+                        #   w1_non w2_non  --> TODO Ajouter au nouv_vocab OU ne rien faire?
+                        w1_has_emb = w1 in word_id
+                        w2_has_emb = w2 in word_id
+                        if w1_has_emb and not w2_has_emb:
+                            pass  # TODO substituer w2 par w1
+                            sub_accents[w2] = w1
+                            #f.write('Substut. {:<20} {}\n'.format(w2, w1))
+                        elif w2_has_emb and not w1_has_emb:
+                            pass  # TODO substituer w1 par w2
+                            sub_accents[w1] = w2
+                            #f.write('Substut. {:<20} {}\n'.format(w1, w2))
+                        elif w1_has_emb and w2_has_emb:
+                            #f.write('2 exist. {:<20} {}\n'.format(w1, w2))
+                            pass
+                        else:
+                            f.write('Inconnus {:<20} {}\n'.format(w1, w2))
+            for a, b in sub_accents.items():
+                f.write('Substut. {:<20} {}\n'.format(a, b))
                 
-
         print('Avant: ' + str(len(word_counts)))
         sorted_idx = np.argsort(word_counts)
         sorted_counts = word_counts[sorted_idx]
