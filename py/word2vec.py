@@ -1,5 +1,7 @@
 import pickle
 import re
+from collections import defaultdict
+
 import numpy as np
 import sklearn.feature_extraction.text
 from sklearn.metrics.pairwise import cosine_similarity
@@ -114,7 +116,11 @@ class Embedder:
         id_to_word = self.vectorizer.get_feature_names()
         word_counts = np.array(np.sum(self.ans_counts, axis=0)).squeeze()
         
-        # TODO enlever nombres
+        print('Enlever nombres')
+        contains_digit_re = re.compile(r'\d')
+        for i1, w1 in enumerate(id_to_word):
+            if contains_digit_re.search(w1):
+                word_counts[i1] = 0
         
         print('Singulier-pluriel')
         # Combiner singulier-pluriel. Lorsqu'un mot avec un 's' existe sans 's', combiner avec la version singulier.
@@ -165,50 +171,57 @@ class Embedder:
             if word_counts[i1] == 0:
                 continue
             racine = w1[:-1] if w1[-1] == 's' else w1
-            assert not any(i not in 'abcdefghijklmnopqrstuvwxyzéèàùçâîêôûœ1234567890' for i in racine[:-1])
+            assert not any(i not in 'abcdefghijklmnopqrstuvwxyzéèàùçâîêôû1234567890' for i in racine[:-1])
 
         print('Oubli accents')
         # Oubli d'accent
-        accents_exceptions = ['cote', 'eleve', 'forme', 'marque', 'prive']
+        accents_exceptions = ['cote', 'eleve', 'eleve' 'forme', 'marque', 'prive', 'necessite']
         sub_accents = {}
+        uni_words = defaultdict(list)
+        dictionnaire_sans_accent = {unidecode(k): v for k, v in word_id.items()}
+        for i1, w1 in enumerate(id_to_word):
+            if word_counts[i1] == 0:  # or w1 in word_id:
+                continue
+            uw1 = unidecode(w1)
+            if uw1 in accents_exceptions or (uw1[-1] == 's' and uw1[:-1] in accents_exceptions):
+                continue
+            uni_words[uw1].append(w1)
+
+        log = []
+        for uniw, duplicates in uni_words.items():
+            if len(duplicates) == 1:
+                #del uni_words[uniw]  # TODO Pas de substitution a faire
+                continue
+            # Verifier qui na pas dembedding
+            has_emb = [w in word_id for w in duplicates]
+            if all(has_emb):
+                continue  # Tout le monde a un embedding! c'est la fete
+            num_emb = sum(has_emb)
+            ont_emb = [i for i, he in enumerate(has_emb) if he]
+            pas_emb = [i for i, he in enumerate(has_emb) if not he]
+            # TODO METTRE DANS  sub_accents !!!!
+            if num_emb == 1:
+                # Subst. tous par un
+                gagnant = ont_emb[0]
+                log.append('{:<20} remplace1 {}\n'.format(duplicates[gagnant], str(duplicates)))
+            else:
+                # Choisir le mot qui va remplacer ceux qui n'en ont pas
+                if uniw in dictionnaire_sans_accent:
+                    gagnant = dictionnaire_sans_accent[uniw]
+                    print('{:<20} remplace! {}\n'.format(self.id_word[gagnant],
+                                                         str([duplicates[i] for i in pas_emb])))
+                    # TODO INTEGRER CECI
+                else:
+                    if num_emb > 0:
+                        gagnant = ont_emb[0]
+                    else:
+                        gagnant = 0
+                    log.insert(0, '{:<20} remplace0 {}\n'.format(duplicates[gagnant],
+                                                                 str([duplicates[i] for i in pas_emb])))
         with open('oubli-accent.txt', 'w') as f:
-            
-            for i1, w1 in enumerate(tqdm(id_to_word)):
-                if word_counts[i1] == 0:
-                    continue
-                for i2, w2 in enumerate(id_to_word):
-                    if i2 <= i1:
-                        continue
-                    if word_counts[i2] == 0:  # TODO optimiser
-                        continue
-                    # TODO fin de mot: conjuguaison?
-                    uw1, uw2 = unidecode(w1), unidecode(w2)
-                    if uw1 == uw2:
-                        if uw1 in accents_exceptions or uw2 in accents_exceptions:
-                            continue
-                        # 4 cas:
-                        #   w1_oui w2_oui  --> Ne rien faire
-                        #   w1_oui w2_non  --> Créer embed. w2 avec vecteur de w1
-                        #   w1_non w2_oui  --> Créer embed. w1 avec vecteur de w2
-                        #   w1_non w2_non  --> TODO Ajouter au nouv_vocab OU ne rien faire?
-                        w1_has_emb = w1 in word_id
-                        w2_has_emb = w2 in word_id
-                        if w1_has_emb and not w2_has_emb:
-                            pass  # TODO substituer w2 par w1
-                            sub_accents[w2] = w1
-                            #f.write('Substut. {:<20} {}\n'.format(w2, w1))
-                        elif w2_has_emb and not w1_has_emb:
-                            pass  # TODO substituer w1 par w2
-                            sub_accents[w1] = w2
-                            #f.write('Substut. {:<20} {}\n'.format(w1, w2))
-                        elif w1_has_emb and w2_has_emb:
-                            #f.write('2 exist. {:<20} {}\n'.format(w1, w2))
-                            pass
-                        else:
-                            f.write('Inconnus {:<20} {}\n'.format(w1, w2))
-            for a, b in sub_accents.items():
-                f.write('Substut. {:<20} {}\n'.format(a, b))
-                
+            for l in log:
+                f.write(l)
+        
         print('Avant: ' + str(len(word_counts)))
         sorted_idx = np.argsort(word_counts)
         sorted_counts = word_counts[sorted_idx]
