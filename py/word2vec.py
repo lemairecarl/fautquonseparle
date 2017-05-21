@@ -104,11 +104,36 @@ class Embedder:
         ans_id, ans_question, self.ans_body = self.load_answers()
         
         # Texts to matrix of representations
-        self.vectorizer = sklearn.feature_extraction.text.CountVectorizer(encoding='utf-8', stop_words=stopwords,
-                                                                     vocabulary=word_id)
-        self.ans_counts = self.vectorizer.transform(self.ans_body)
-        print('Embedding answers...')
-        self.ans_embed = self.embed_counts_matrix()
+        #self.vectorizer = sklearn.feature_extraction.text.CountVectorizer(encoding='utf-8', stop_words=stopwords,
+        #                                                                  vocabulary=word_id)
+        #self.ans_counts = self.vectorizer.transform(self.ans_body)
+        self.vectorizer = sklearn.feature_extraction.text.CountVectorizer(encoding='utf-8', stop_words=stopwords)
+        self.ans_counts = self.vectorizer.fit_transform(self.ans_body)
+        id_to_word = self.vectorizer.get_feature_names()
+        word_counts = np.array(np.sum(self.ans_counts, axis=0)).squeeze()
+        #sub_pluriel = {}
+        for i1, w1 in enumerate(id_to_word):
+            if w1[-1] != 's':
+                continue
+            for i2, w2 in enumerate(id_to_word):
+                if w1[:-1] == w2:
+                    word_counts[i2] += word_counts[i1]
+                    word_counts[i1] = 0
+        
+        print('Avant: ' + str(len(word_counts)))
+        sorted_idx = np.argsort(word_counts)
+        sorted_counts = word_counts[sorted_idx]
+        non_zero = sorted_counts > 0
+        del sorted_counts
+        sorted_idx = sorted_idx[non_zero]
+        print('Après: ' + str(len(sorted_idx)))
+        
+        with open('mots.txt', 'w') as f:
+            for m in sorted_idx:
+                f.write('{:<3} {}\n'.format(word_counts[m], id_to_word[m]))
+
+        # print('Embedding answers...')
+        # self.ans_embed = self.embed_counts_matrix()
         
         # Save embeddings
         #with open('w2v.pkl', 'wb') as f:

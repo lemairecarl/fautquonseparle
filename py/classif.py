@@ -104,15 +104,14 @@ def build_model(num_classes):
 def train(model: Sequential, data, gen=None, verbose=1, epochs=10):
     print('Training...')
     if gen:
-        print('Using gen')
         history = model.fit_generator(gen(), 100, epochs=epochs, verbose=verbose,
                                       validation_data=(data['X_val'], data['y_val']))
     else:
-        print('Using array')
         history = model.fit(data['X_train'], data['y_train'],
                             validation_data=(data['X_val'], data['y_val']),
                             verbose=verbose)
-    return np.max(history.history['val_acc'])
+    
+    return history
 
 
 if __name__ == '__main__':
