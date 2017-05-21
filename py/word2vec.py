@@ -3,6 +3,8 @@ import re
 import numpy as np
 import sklearn.feature_extraction.text
 from sklearn.metrics.pairwise import cosine_similarity
+from unidecode import unidecode
+from tqdm import tqdm
 
 DIGITS = re.compile("[0-9]", re.UNICODE)
 
@@ -127,7 +129,6 @@ class Embedder:
                     n_cas += 1
         print("Cas: " + str(n_cas))
         
-        
         print("Remplacer les accents absurdes")
         # Remplacer les accents absurdes þ_
         wtf = dict(zip('õīęėěūá', 'ôîeéêûâ'))
@@ -137,6 +138,7 @@ class Embedder:
         wtf['æ'] = 'ae'
         wtf['þ'] = ''
         wtf['_'] = ''
+        wtf['œ'] = 'oe'
         sub_accents = {}
         n_cas = 0
         for i1, w1 in enumerate(id_to_word):
@@ -155,14 +157,30 @@ class Embedder:
                 n_cas += 1
         print("Cas: " + str(n_cas))
         
-        print("Enlever ...")
+        print("Vérifier...")
         # Vérifier
         for i1, w1 in enumerate(id_to_word):
             if word_counts[i1] == 0:
                 continue
             racine = w1[:-1] if w1[-1] == 's' else w1
-            if any(i not in 'abcdefghijklmnopqrstuvwxyzéèàùçâîêôûœ1234567890' for i in racine[:-1]):
-                print(w1)
+            assert not any(i not in 'abcdefghijklmnopqrstuvwxyzéèàùçâîêôûœ1234567890' for i in racine[:-1])
+
+        print('Oubli accents')
+        # Oubli d'accent
+        with open('oubli-accent.txt', 'w') as f:
+            for i1, w1 in enumerate(tqdm(id_to_word)):
+                if word_counts[i1] == 0:
+                    continue
+                for i2, w2 in enumerate(id_to_word):
+                    if i2 <= i1:
+                        continue
+                    if word_counts[i2] == 0:  # TODO optimiser
+                        continue
+                    # TODO fin de mot: conjuguaison?
+                    if unidecode(w1) == unidecode(w2):
+                        f.write('{:<20} {}\n'.format(w1, w2))
+                        break
+                
 
         print('Avant: ' + str(len(word_counts)))
         sorted_idx = np.argsort(word_counts)
