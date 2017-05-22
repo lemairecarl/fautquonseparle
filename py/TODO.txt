@@ -1,15 +1,16 @@
-- ACCENTS
-    X Remplacer les accents exotiques de marde
-    X Si un mot n'a pas d'embedding, verifier s'il y en a un avec le meme unidecode. Si oui, lui assigner. Sinon,
-      réunir tous les mots avec le meme unidecode dans un nouveau mot.
-    X Exceptions: traiter manuellement.
-        eleve(s) --> élève(s)
-
-X Enlever nombres
-X Pluriel
-    X Mots qui existent avec et sans 's': remplacer par la version singulier
-
-- Effectuer les substitutions PROGRESSIVEMENT
+- Substituer/retirer les mots incorrects
+    X ACCENTS
+        X Remplacer les accents exotiques de marde
+        X Si un mot n'a pas d'embedding, verifier s'il y en a un avec le meme unidecode. Si oui, lui assigner. Sinon,
+          réunir tous les mots avec le meme unidecode dans un nouveau mot.
+        X Exceptions: traiter manuellement.
+            eleve(s) --> élève(s)
+    X Enlever nombres
+    X Pluriel
+        X Mots qui existent avec et sans 's': remplacer par la version singulier
+    X Effectuer les substitutions PROGRESSIVEMENT
+    - Corrections manuelles, spellchecker?
+    - Enlever mots peu fréquents qui n'ont pas d'embedding!!!
 
 - Améliorer embeddings
     - Utiliser embeddings et tfidf

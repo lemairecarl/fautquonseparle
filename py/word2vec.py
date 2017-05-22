@@ -12,6 +12,56 @@ DIGITS = re.compile("[0-9]", re.UNICODE)
 
 
 class Embedder:
+    def __init__(self):
+        stopwords = self.load_stopwords('stopwords-fr.txt')
+        emb_words, self.emb_to_id, self.id_to_emb, self.embeddings = self.load_embeddings()  # emb: mot ayant un embedding
+        ans_id, ans_question, self.ans_body = self.load_answers()
+        
+        # Constituer un vocabulaire initial (contenant des fautes d'orthographe et des pluriels)
+        self.vectorizer = sklearn.feature_extraction.text.CountVectorizer(encoding='utf-8', stop_words=stopwords)
+        self.ans_counts = self.vectorizer.fit_transform(self.ans_body)
+        self.id_to_word = self.vectorizer.get_feature_names()
+        
+        # Réduire le vocabulaire
+        self.substitutions = {}
+        self.mots_restants = dict(enumerate(self.id_to_word))
+        self.retirer_nombres()
+        self.fusionner_pluriel()
+        self.remplacer_accents_exotiques()
+        sub_embed = self.substitution_accents()
+        self.substitution_orthographe()
+        
+        # Faire le pont entre les deux vocabulaires. id_voc_dataset -> id_voc_embed
+        self.data_to_emb = {}
+        for m in self.mots_restants:
+            emb_i = sub_embed.get(m, None)  # D'abord traiter les substitution mot_dataset -> mot_embed
+            if emb_i is None:
+                emb_i = self.emb_to_id.get(self.id_to_word[m], 0)  # 0 correspond a l'embedding nul (vecteur nul)
+            self.data_to_emb[m] = emb_i
+        
+        # Convertir en matrice dense avant de faire les substitutions
+        self.ans_counts = self.ans_counts.todense()
+        
+        print('Effectuer les substitutions')
+        # Effectuer les substitutions
+        for ans_i in tqdm(range(self.ans_counts.shape[0])):
+            for old, new in self.substitutions.items():
+                self.ans_counts[ans_i, new] += self.ans_counts[ans_i, old]
+                self.ans_counts[ans_i, old] = 0
+        
+        # Enlever les mots retirés
+        mots_enleves = np.array([m for m in range(len(self.id_to_word)) if m not in self.mots_restants])
+        self.ans_counts[:, mots_enleves] = 0
+        
+        self.analyser_vocabulaire()
+        
+        print("Faire l'embedding des réponses...")
+        self.ans_embed = self.embed_counts_matrix()
+        
+        # Save embeddings
+        with open('w2v.pkl', 'wb') as f:
+            pickle.dump(self.ans_embed, f, pickle.HIGHEST_PROTOCOL)
+    
     def load_stopwords(self, filename):
         stopwords = []
         with open(filename, 'r') as f:
@@ -61,7 +111,7 @@ class Embedder:
         if len(kept_idx) == 0:
             return False
         for x in np.ravel(kept_idx):
-            print(str(np.ravel(repr)[x]) + ' ' + self.id_word[x])
+            print(str(np.ravel(repr)[x]) + ' ' + self.id_to_emb[x])
         return True
     
     def embed_phrase(self, phrase):
@@ -127,88 +177,48 @@ class Embedder:
         for k in keys:
             yield k, self.mots_restants[k]
     
-    def __init__(self):
-        stopwords = self.load_stopwords('stopwords-fr.txt')
-        words, word_id, self.id_word, self.embeddings = self.load_embeddings()  # TODO renommer!!!!
-        ans_id, ans_question, self.ans_body = self.load_answers()
-        
-        # Texts to matrix of representations
-        #self.vectorizer = sklearn.feature_extraction.text.CountVectorizer(encoding='utf-8', stop_words=stopwords,
-        #                                                                  vocabulary=word_id)
-        #self.ans_counts = self.vectorizer.transform(self.ans_body)
-        self.vectorizer = sklearn.feature_extraction.text.CountVectorizer(encoding='utf-8', stop_words=stopwords)
-        self.ans_counts = self.vectorizer.fit_transform(self.ans_body)
-        id_to_word = self.vectorizer.get_feature_names()
-        self.id_to_word = id_to_word
-        word_counts = np.array(np.sum(self.ans_counts, axis=0)).squeeze()
-        
-        self.substitutions = {}
-        self.mots_restants = dict(zip(range(len(id_to_word)), id_to_word))  # Convertir id_to_word en dict
-        
-        print('Enlever nombres')
+    def retirer_nombres(self):
+        print('Retirer nombres')
         contains_digit_re = re.compile(r'\d')
         for i1, w1 in self.iter_mots_restants():
             if contains_digit_re.search(w1):
-                word_counts[i1] = 0
                 self.retirer(i1)
-
-        print('Singulier-pluriel')
+    
+    def fusionner_pluriel(self):
+        print('Fusionner pluriel avec singulier')
         # Combiner singulier-pluriel. Lorsqu'un mot avec un 's' existe sans 's', combiner avec la version singulier.
-        #sub_pluriel = {}  # clef: a remplacer; valeur: remplacer par
         n_cas = 0
         mots_avec_s = []
         for i, w in self.iter_mots_restants():
             if w[-1] == 's':
                 mots_avec_s.append(i)
         for i in mots_avec_s:
-            w = id_to_word[i]
+            w = self.id_to_word[i]
             new_i = self.vectorizer.vocabulary_.get(w[:-1], None)
             if new_i is not None:
                 self.substituer(i, new_i)
-                word_counts[new_i] += word_counts[i]
-                word_counts[i] = 0
                 n_cas += 1
         print("Cas: " + str(n_cas))
+     
+    def analyser_vocabulaire(self):
+        word_counts = np.array(np.sum(self.ans_counts, axis=0)).squeeze()
+        nb_mots_suppr = np.sum(word_counts == 0)
+        sorted_i = np.argsort(word_counts)[nb_mots_suppr:]  # Exclure les mots supprimés
+        with open('mots.txt', 'w') as f:
+            f.write('Mots avant: {}\n'.format(len(self.id_to_word)))
+            f.write('Mots apres: {}\n'.format(len(self.mots_restants)))
+            for m in sorted_i:
+                indic_nouv = 'NOUV' if self.data_to_emb[m] == 0 else ''
+                f.write('{:<3} {:<20} {}\n'.format(word_counts[m], self.id_to_word[m], indic_nouv))
 
-        print("Remplacer les accents absurdes")
-        # Remplacer les accents absurdes
-        wtf = dict(zip('õīęėěūáůñ', 'ôîeéêûâûn'))
-        wtf.update({
-            'ľ': '',
-            'ď': '',
-            'ß': '',
-            'þ': '',
-            '_': '',
-            'œ': 'oe',
-            'æ': 'ae',
-        })
-        #sub_accents_exotiques = {}
-        n_cas = 0
-        for i1, w1 in self.iter_mots_restants():
-            if any(l in wtf for l in w1):
-                new_w = None
-                for old, new in wtf.items():
-                    new_w = w1.replace(old, new)
-                new_i = self.vectorizer.vocabulary_.get(new_w, None)  # TODO vérifier aussi avec embeddings
-                if new_i is not None:
-                    self.substituer(i1, new_i)
-                    word_counts[new_i] += word_counts[i1]
-                else:
-                    self.retirer(i1)
-                    print('Suppr: ' + w1 + ' (' + new_w + ')')
-                word_counts[i1] = 0
-                n_cas += 1
-        print("Cas: " + str(n_cas))
+    def substitution_orthographe(self):
+        sub = {'civic': 'civique'}
+        for old, new in sub.items():
+            old_i = self.vectorizer.vocabulary_[old]
+            new_i = self.vectorizer.vocabulary_[new]
+            self.substituer(old_i, new_i)
 
-        print("Vérifier...")
-        # Vérifier s'il y a encore des mots avec des accents exotiques
-        for i1, w1 in self.iter_mots_restants():
-            if word_counts[i1] == 0:
-                continue
-            if any(l not in 'abcdefghijklmnopqrstuvwxyzéèàùçâîêôûï1234567890' for l in w1):
-                raise Exception('Un mot a un accent exotique: ' + w1)
-        print('OK!')
-
+    def substitution_accents(self):
         print('Oubli accents')
         # Oubli d'accent
         accents_exceptions_generales = {
@@ -220,45 +230,38 @@ class Embedder:
             'nécessites': 'nécessités',
             'necessités': 'nécessités',
         }
-        #sub_accents = {}
         sub_embed = {}  # index_mon_vocab --> index_embed
         uni_words = defaultdict(list)
-        dictionnaire_sans_accent = {unidecode(k): v for k, v in word_id.items()}
+        dictionnaire_sans_accent = {unidecode(k): v for k, v in self.emb_to_id.items()}
         for i1, w1 in self.iter_mots_restants():
-            if word_counts[i1] == 0:
-                continue
             uw1 = unidecode(w1)
             if uw1 in accents_exceptions_generales:
                 new_w = accents_exceptions_generales[uw1]
                 new_i = self.vectorizer.vocabulary_[new_w]
                 self.substituer(i1, new_i)
-                word_counts[i1] = 0
                 continue
             if w1 in accents_exceptions_specifiques:
                 new_w = accents_exceptions_specifiques[w1]
                 new_i = self.vectorizer.vocabulary_[new_w]
                 self.substituer(i1, new_i)
-                word_counts[i1] = 0
                 continue
             # Si le mot a un embedding, pas de problème.
-            if w1 in word_id:
+            if w1 in self.emb_to_id:
                 continue
             # Si un embedding a le meme unicode, on lui donne cet embedding.
             new_emb_i = dictionnaire_sans_accent.get(uw1, None)
             if new_emb_i is not None:
                 sub_embed[i1] = new_emb_i
                 self.retirer(i1)
-                word_counts[i1] = 0
                 continue
             uni_words[uw1].append(i1)
-
         log = []
         for uniw, duplicates in uni_words.items():
             if len(duplicates) == 1:
                 # Pas de substitution a faire
                 continue
-
-            graphies = [id_to_word[i] for i in duplicates]
+        
+            graphies = [self.id_to_word[i] for i in duplicates]
             le_remplacant = max(graphies)  # Celui qui a le plus d'accent! On aime ça les accents!
             le_remplacant_i = self.vectorizer.vocabulary_[le_remplacant]
             les_remplaces = []
@@ -266,81 +269,52 @@ class Embedder:
                 if i == le_remplacant_i:
                     continue
                 self.substituer(i, le_remplacant_i)
-                word_counts[le_remplacant_i] += word_counts[i]
-                word_counts[i] = 0
-                les_remplaces.append(id_to_word[i])
+                les_remplaces.append(self.id_to_word[i])
             log.append('{:<20} remplace {}\n'.format(le_remplacant,
                                                      str(' '.join(les_remplaces))))
         with open('oubli-accent.txt', 'w') as f:
             for l in log:
                 f.write(l)
+    
+        return sub_embed
 
-        # Autres substituions
-        sub_autre_str = {'civic': 'civique'}
-        #sub_autre = {}
-        for old, new in sub_autre_str.items():
-            old_i = self.vectorizer.vocabulary_[old]
-            new_i = self.vectorizer.vocabulary_[new]
-            self.substituer(old_i, new_i)
-            word_counts[new_i] = word_counts[old_i]
-            word_counts[old_i] = 0
+    def verifier_accents_exotiques(self):
+        print("Vérifier...")
+        # Vérifier s'il y a encore des mots avec des accents exotiques
+        for i1, w1 in self.iter_mots_restants():
+            if any(l not in 'abcdefghijklmnopqrstuvwxyzéèàùçâîêôûï1234567890' for l in w1):
+                raise Exception('Un mot a un accent exotique: ' + w1)
+        print('OK!')
 
-        print('Avant: ' + str(len(word_counts)))
-        sorted_idx = np.argsort(word_counts)
-        sorted_counts = word_counts[sorted_idx]
-        non_zero = sorted_counts > 0
-        del sorted_counts
-        sorted_idx = sorted_idx[non_zero]
-        print('Après: ' + str(len(sorted_idx)))
+    def remplacer_accents_exotiques(self):
+        print("Remplacer les accents exotiques")
+        # Remplacer les accents absurdes
+        wtf = dict(zip('õīęėěūáůñ', 'ôîeéêûâûn'))
+        wtf.update({
+            'ľ': '',
+            'ď': '',
+            'ß': '',
+            'þ': '',
+            '_': '',
+            'œ': 'oe',
+            'æ': 'ae',
+        })
+        n_cas = 0
+        for i1, w1 in self.iter_mots_restants():
+            if any(l in wtf for l in w1):
+                new_w = None
+                for old, new in wtf.items():
+                    new_w = w1.replace(old, new)
+                new_i = self.vectorizer.vocabulary_.get(new_w, None)
+                if new_i is not None:
+                    self.substituer(i1, new_i)
+                else:
+                    self.retirer(i1)
+                    print('Supprimé: ' + w1 + ' (' + new_w + ')')
+                n_cas += 1
+        print("Cas: " + str(n_cas))
 
-        with open('mots.txt', 'w') as f:
-            for m in sorted_idx:
-                f.write('{:<3} {}\n'.format(word_counts[m], id_to_word[m]))
-
-        # Faire le pont entre les deux vocabulaires. id_voc_dataset -> id_voc_embed
-        self.data_to_emb = {}
-        for m in self.mots_restants:
-            emb_i = sub_embed.get(m, None)  # D'abord traiter les substitution mot_dataset -> mot_embed
-            if emb_i is None:
-                emb_i = word_id.get(id_to_word[m], 0)  # 0 correspond a l'embedding nul (vecteur nul)
-            self.data_to_emb[m] = emb_i
-
-        # Convertir en matrice dense avant de faire les substitutions
-        self.ans_counts = self.ans_counts.todense()
-
-        print('Effectuer les substitutions')
-        # Effectuer les substitutions
-        for ans_i in tqdm(range(self.ans_counts.shape[0])):
-            for old, new in self.substitutions.items():
-                count = self.ans_counts[ans_i, old]
-                self.ans_counts[ans_i, old] = 0
-                self.ans_counts[ans_i, new] = count
-        
-        # Enlever les mots retirés
-        mots_enleves = np.array([m for m in range(len(id_to_word)) if m not in self.mots_restants])
-        self.ans_counts[:, mots_enleves] = 0
-        
-        # # TODO RECONVERTIR EN MATRICE COMPRESSÉE?
-        #
-        with open('counts.pkl', 'wb') as f:
-            pickle.dump((self.ans_counts, self.data_to_emb), f, pickle.HIGHEST_PROTOCOL)
-        
-        #with open('counts.pkl', 'rb') as f:
-        #    self.ans_counts, self.data_to_emb = pickle.load(f)
-        
-        # TODO SUB EMBED
-
-        print('Embedding answers...')
-        self.ans_embed = self.embed_counts_matrix()
-        
-        # Save embeddings
-        with open('w2v.pkl', 'wb') as f:
-           pickle.dump(self.ans_embed, f, pickle.HIGHEST_PROTOCOL)
-        
-        # Save fqsp data
-        #with open('fqsp.pkl', 'wb') as f:
-        #    o = (ans_id, ans_question, self.ans_body)
-        #    pickle.dump(o, f, pickle.HIGHEST_PROTOCOL)
+        self.verifier_accents_exotiques()
 
 
 if __name__ == '__main__':
