@@ -210,6 +210,10 @@ class Embedder:
             for m in sorted_i:
                 indic_nouv = 'NOUV' if self.data_to_emb[m] == 0 else ''
                 f.write('{:<3} {:<20} {}\n'.format(word_counts[m], self.id_to_word[m], indic_nouv))
+        with open('nouv.txt', 'w') as f:
+            for m in self.mots_restants:
+                if self.data_to_emb[m] == 0:
+                    f.write('{},{}\n'.format(m, self.mots_restants[m]))
 
     def substitution_orthographe(self):
         sub = {'civic': 'civique'}
