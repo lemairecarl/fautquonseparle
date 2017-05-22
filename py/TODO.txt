@@ -1,14 +1,17 @@
 - ACCENTS
     X Remplacer les accents exotiques de marde
-    X Mots dupliqués: Lookup dans dict d'embeddings. Si un embedding existe pour un des mots, l'assigner à tous.
-    X verifier si version unidecode existe dans vocab embeddings (meme si nexiste pas dans le dataset)
-    - Exceptions: traiter manuellement.
+    X Si un mot n'a pas d'embedding, verifier s'il y en a un avec le meme unidecode. Si oui, lui assigner. Sinon,
+      réunir tous les mots avec le meme unidecode dans un nouveau mot.
+    X Exceptions: traiter manuellement.
         eleve(s) --> élève(s)
 
-- MAJUSCULES DANS DICT EMBED? (suède vs. Suède)
-- Enlever nombres
+X Enlever nombres
 - Pluriel
     X Mots qui existent avec et sans 's': remplacer par la version singulier
+
+- Calculer le word count
+- Effectuer les substitutions
+
 - Améliorer embeddings
     - Utiliser embeddings et tfidf
 - lunr

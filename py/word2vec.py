@@ -104,7 +104,7 @@ class Embedder:
     
     def __init__(self):
         stopwords = self.load_stopwords('stopwords-fr.txt')
-        words, word_id, self.id_word, self.embeddings = self.load_embeddings()
+        words, word_id, self.id_word, self.embeddings = self.load_embeddings()  # TODO renommer!!!!
         ans_id, ans_question, self.ans_body = self.load_answers()
         
         # Texts to matrix of representations
@@ -115,7 +115,7 @@ class Embedder:
         self.ans_counts = self.vectorizer.fit_transform(self.ans_body)
         id_to_word = self.vectorizer.get_feature_names()
         word_counts = np.array(np.sum(self.ans_counts, axis=0)).squeeze()
-        
+        # TODO combiner toutes les substitutions
         print('Enlever nombres')
         contains_digit_re = re.compile(r'\d')
         for i1, w1 in enumerate(id_to_word):
@@ -126,52 +126,57 @@ class Embedder:
         # Combiner singulier-pluriel. Lorsqu'un mot avec un 's' existe sans 's', combiner avec la version singulier.
         sub_pluriel = {}  # clef: a remplacer; valeur: remplacer par
         n_cas = 0
-        for i1, w1 in enumerate(id_to_word):
-            if w1[-1] != 's':
-                continue
-            for i2, w2 in enumerate(id_to_word):
-                if w1[:-1] == w2:
-                    sub_pluriel[i1] = i2
-                    word_counts[i2] += word_counts[i1]
-                    word_counts[i1] = 0
-                    n_cas += 1
+        mots_avec_s = []
+        for i, w in enumerate(id_to_word):
+            if w[-1] == 's':
+                mots_avec_s.append(i)
+        for i in mots_avec_s:
+            w = id_to_word[i]
+            new_i = self.vectorizer.vocabulary_.get(w[:-1], None)
+            if new_i is not None:
+                sub_pluriel[i] = new_i
+                word_counts[new_i] += word_counts[i]
+                word_counts[i] = 0
+                n_cas += 1
         print("Cas: " + str(n_cas))
         
         print("Remplacer les accents absurdes")
-        # Remplacer les accents absurdes þ_
-        wtf = dict(zip('õīęėěūá', 'ôîeéêûâ'))
-        wtf['ľ'] = ''
-        wtf['ď'] = ''
-        wtf['ß'] = ''
-        wtf['æ'] = 'ae'
-        wtf['þ'] = ''
-        wtf['_'] = ''
-        wtf['œ'] = 'oe'
+        # Remplacer les accents absurdes
+        wtf = dict(zip('õīęėěūáůñ', 'ôîeéêûâûn'))
+        wtf.update({
+            'ľ': '',
+            'ď': '',
+            'ß': '',
+            'þ': '',
+            '_': '',
+            'œ': 'oe',
+            'æ': 'ae',
+        })
         sub_accents_exotiques = {}
         n_cas = 0
         for i1, w1 in enumerate(id_to_word):
-            if any(l in w1 for l in wtf):
+            if any(l in wtf for l in w1):
                 new_w = None
                 for old, new in wtf.items():
                     new_w = w1.replace(old, new)
-                if new_w in self.vectorizer.vocabulary_:
-                    new_i = self.vectorizer.vocabulary_[new_w]
+                new_i = self.vectorizer.vocabulary_.get(new_w, None)
+                if new_i is not None:
                     sub_accents_exotiques[i1] = new_i
                     word_counts[new_i] += word_counts[i1]
                 else:
-                    word_counts[i1] = -1
                     print('Suppr: ' + w1 + ' (' + new_w + ')')
                 word_counts[i1] = 0
                 n_cas += 1
         print("Cas: " + str(n_cas))
         
         print("Vérifier...")
-        # Vérifier
+        # Vérifier s'il y a encore des mots avec des accents exotiques
         for i1, w1 in enumerate(id_to_word):
             if word_counts[i1] == 0:
                 continue
-            racine = w1[:-1] if w1[-1] == 's' else w1
-            assert not any(i not in 'abcdefghijklmnopqrstuvwxyzéèàùçâîêôû1234567890' for i in racine[:-1])
+            if any(l not in 'abcdefghijklmnopqrstuvwxyzéèàùçâîêôûï1234567890' for l in w1):
+                raise Exception('Un mot a un accent exotique: ' + w1)
+        print('OK!')
 
         print('Oubli accents')
         # Oubli d'accent
@@ -185,39 +190,55 @@ class Embedder:
             'necessités': 'nécessités',
         }
         sub_accents = {}
+        sub_embed = {}  # TODO index_mon_vocab --> index_embed
         uni_words = defaultdict(list)
         dictionnaire_sans_accent = {unidecode(k): v for k, v in word_id.items()}
         for i1, w1 in enumerate(id_to_word):
             if word_counts[i1] == 0:
                 continue
             uw1 = unidecode(w1)
-            if uw1 in accents_exceptions_generales or w1 in accents_exceptions_specifiques:
+            if uw1 in accents_exceptions_generales:
+                new_w = accents_exceptions_generales[uw1]
+                new_i = self.vectorizer.vocabulary_[new_w]
+                sub_accents[i1] = new_i
+                word_counts[i1] = 0
                 continue
-            uni_words[uw1].append(w1)
+            if w1 in accents_exceptions_specifiques:
+                new_w = accents_exceptions_specifiques[w1]
+                new_i = self.vectorizer.vocabulary_[new_w]
+                sub_accents[i1] = new_i
+                word_counts[i1] = 0
+                continue
+            # Si le mot a un embedding, pas de problème.
+            if w1 in word_id:
+                continue
+            # Si un embedding a le meme unicode, on lui donne cet embedding.
+            new_emb_i = dictionnaire_sans_accent.get(uw1, None)
+            if new_emb_i is not None:
+                sub_embed[i1] = new_emb_i
+                word_counts[i1] = 0
+                continue
+            uni_words[uw1].append(i1)
 
         log = []
         for uniw, duplicates in uni_words.items():
             if len(duplicates) == 1:
-                #del uni_words[uniw]  # TODO Pas de substitution a faire
+                # Pas de substitution a faire
                 continue
-                
-            # 1. Si tout le monde a un embedding, passer
-            has_emb = [w in word_id for w in duplicates]
-            if all(has_emb):
-                continue  # Tout le monde a un embedding! c'est la fete
-
-            # 2. Sinon >= 1 n'a pas d'embedding:
-            #   a.  Si l'unidecode existe, assigner les mots à cet embedding
-            #   b.  Sinon, rassembler tous les mots dans une seule forme.
-            pas_emb = [i for i, he in enumerate(has_emb) if not he]
-            if uniw in dictionnaire_sans_accent:
-                le_remplacant = self.id_word[dictionnaire_sans_accent[uniw]]
-                log.append('{:<20} remplace! {}\n'.format(le_remplacant,
-                                                          str([duplicates[i] for i in pas_emb])))
-            else:
-                le_remplacant = duplicates[0]
-                log.insert(0, '{:<20} remplace? {}\n'.format(le_remplacant,
-                                                             str([duplicates[i] for i in pas_emb])))
+            
+            graphies = [id_to_word[i] for i in duplicates]
+            le_remplacant = max(graphies)  # Celui qui a le plus d'accent! On aime ça les accents!
+            le_remplacant_i = self.vectorizer.vocabulary_[le_remplacant]
+            les_remplaces = []
+            for i in duplicates:
+                if i == le_remplacant_i:
+                    continue
+                sub_accents[i] = le_remplacant_i
+                word_counts[le_remplacant_i] += word_counts[i]
+                word_counts[i] = 0
+                les_remplaces.append(id_to_word[i])
+            log.append('{:<20} remplace {}\n'.format(le_remplacant,
+                                                     str(' '.join(les_remplaces))))
         with open('oubli-accent.txt', 'w') as f:
             for l in log:
                 f.write(l)
