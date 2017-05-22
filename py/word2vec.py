@@ -115,7 +115,7 @@ class Embedder:
         self.ans_counts = self.vectorizer.fit_transform(self.ans_body)
         id_to_word = self.vectorizer.get_feature_names()
         word_counts = np.array(np.sum(self.ans_counts, axis=0)).squeeze()
-        # TODO combiner toutes les substitutions
+        
         print('Enlever nombres')
         contains_digit_re = re.compile(r'\d')
         for i1, w1 in enumerate(id_to_word):
@@ -180,17 +180,17 @@ class Embedder:
 
         print('Oubli accents')
         # Oubli d'accent
-        accents_exceptions_generales = {  # TODO ajouter aux substitutions
+        accents_exceptions_generales = {
             'eleve': 'élève',
             'eleves': 'élèves'
         }
-        accents_exceptions_specifiques = {  # TODO ajouter aux substitutions
+        accents_exceptions_specifiques = {
             'necessites': 'nécessités',
             'nécessites': 'nécessités',
             'necessités': 'nécessités',
         }
         sub_accents = {}
-        sub_embed = {}  # TODO index_mon_vocab --> index_embed
+        sub_embed = {}  # index_mon_vocab --> index_embed
         uni_words = defaultdict(list)
         dictionnaire_sans_accent = {unidecode(k): v for k, v in word_id.items()}
         for i1, w1 in enumerate(id_to_word):
@@ -242,7 +242,7 @@ class Embedder:
         with open('oubli-accent.txt', 'w') as f:
             for l in log:
                 f.write(l)
-        
+
         print('Avant: ' + str(len(word_counts)))
         sorted_idx = np.argsort(word_counts)
         sorted_counts = word_counts[sorted_idx]
@@ -255,12 +255,41 @@ class Embedder:
             for m in sorted_idx:
                 f.write('{:<3} {}\n'.format(word_counts[m], id_to_word[m]))
 
-        # print('Embedding answers...')
-        # self.ans_embed = self.embed_counts_matrix()
+        # Autres substituions
+        sub_autre_str = {'civic': 'civique'}
+        sub_autre = {}
+        for old, new in sub_autre_str.items():
+            sub_autre[self.vectorizer.vocabulary_[old]] = self.vectorizer.vocabulary_[new]
+
+        # Convertir en matrice dense avant de faire les substitutions
+        self.ans_counts = self.ans_counts.todense()
+        
+        print('Effectuer les substitutions')
+        # Effectuer les substitutions
+        all_subs = {}
+        all_subs.update(sub_pluriel)
+        all_subs.update(sub_accents_exotiques)
+        all_subs.update(sub_accents)
+        all_subs.update(sub_autre)
+        for ans_i in tqdm(range(self.ans_counts.shape[0])):
+            for old, new in all_subs.items():
+                count = self.ans_counts[ans_i, old]
+                self.ans_counts[ans_i, old] = 0
+                self.ans_counts[ans_i, new] = count
+        
+        # TODO RECONVERTIR EN MATRICE COMPRESSÉE?
+        
+        with open('counts.pkl', 'wb') as f:
+            pickle.dump(self.ans_counts, f, pickle.HIGHEST_PROTOCOL)
+        
+        # TODO SUB EMBED
+
+        print('Embedding answers...')
+        self.ans_embed = self.embed_counts_matrix()
         
         # Save embeddings
-        #with open('w2v.pkl', 'wb') as f:
-        #    pickle.dump(self.ans_embed, f, pickle.HIGHEST_PROTOCOL)
+        with open('w2v.pkl', 'wb') as f:
+           pickle.dump(self.ans_embed, f, pickle.HIGHEST_PROTOCOL)
         
         # Save fqsp data
         #with open('fqsp.pkl', 'wb') as f:
