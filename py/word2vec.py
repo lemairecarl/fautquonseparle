@@ -175,15 +175,23 @@ class Embedder:
 
         print('Oubli accents')
         # Oubli d'accent
-        accents_exceptions = ['cote', 'eleve', 'eleve' 'forme', 'marque', 'prive', 'necessite']
+        accents_exceptions_generales = {  # TODO ajouter aux substitutions
+            'eleve': 'élève',
+            'eleves': 'élèves'
+        }
+        accents_exceptions_specifiques = {  # TODO ajouter aux substitutions
+            'necessites': 'nécessités',
+            'nécessites': 'nécessités',
+            'necessités': 'nécessités',
+        }
         sub_accents = {}
         uni_words = defaultdict(list)
         dictionnaire_sans_accent = {unidecode(k): v for k, v in word_id.items()}
         for i1, w1 in enumerate(id_to_word):
-            if word_counts[i1] == 0:  # or w1 in word_id:
+            if word_counts[i1] == 0:
                 continue
             uw1 = unidecode(w1)
-            if uw1 in accents_exceptions or (uw1[-1] == 's' and uw1[:-1] in accents_exceptions):
+            if uw1 in accents_exceptions_generales or w1 in accents_exceptions_specifiques:
                 continue
             uni_words[uw1].append(w1)
 
@@ -192,32 +200,24 @@ class Embedder:
             if len(duplicates) == 1:
                 #del uni_words[uniw]  # TODO Pas de substitution a faire
                 continue
-            # Verifier qui na pas dembedding
+                
+            # 1. Si tout le monde a un embedding, passer
             has_emb = [w in word_id for w in duplicates]
             if all(has_emb):
                 continue  # Tout le monde a un embedding! c'est la fete
-            num_emb = sum(has_emb)
-            ont_emb = [i for i, he in enumerate(has_emb) if he]
+
+            # 2. Sinon >= 1 n'a pas d'embedding:
+            #   a.  Si l'unidecode existe, assigner les mots à cet embedding
+            #   b.  Sinon, rassembler tous les mots dans une seule forme.
             pas_emb = [i for i, he in enumerate(has_emb) if not he]
-            # TODO METTRE DANS  sub_accents !!!!
-            if num_emb == 1:
-                # Subst. tous par un
-                gagnant = ont_emb[0]
-                log.append('{:<20} remplace1 {}\n'.format(duplicates[gagnant], str(duplicates)))
+            if uniw in dictionnaire_sans_accent:
+                le_remplacant = self.id_word[dictionnaire_sans_accent[uniw]]
+                log.append('{:<20} remplace! {}\n'.format(le_remplacant,
+                                                          str([duplicates[i] for i in pas_emb])))
             else:
-                # Choisir le mot qui va remplacer ceux qui n'en ont pas
-                if uniw in dictionnaire_sans_accent:
-                    gagnant = dictionnaire_sans_accent[uniw]
-                    print('{:<20} remplace! {}\n'.format(self.id_word[gagnant],
-                                                         str([duplicates[i] for i in pas_emb])))
-                    # TODO INTEGRER CECI
-                else:
-                    if num_emb > 0:
-                        gagnant = ont_emb[0]
-                    else:
-                        gagnant = 0
-                    log.insert(0, '{:<20} remplace0 {}\n'.format(duplicates[gagnant],
-                                                                 str([duplicates[i] for i in pas_emb])))
+                le_remplacant = duplicates[0]
+                log.insert(0, '{:<20} remplace? {}\n'.format(le_remplacant,
+                                                             str([duplicates[i] for i in pas_emb])))
         with open('oubli-accent.txt', 'w') as f:
             for l in log:
                 f.write(l)
