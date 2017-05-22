@@ -6,11 +6,10 @@
         eleve(s) --> élève(s)
 
 X Enlever nombres
-- Pluriel
+X Pluriel
     X Mots qui existent avec et sans 's': remplacer par la version singulier
 
-- Calculer le word count
-- Effectuer les substitutions
+- Effectuer les substitutions PROGRESSIVEMENT
 
 - Améliorer embeddings
     - Utiliser embeddings et tfidf
