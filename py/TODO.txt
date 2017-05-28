@@ -10,6 +10,7 @@
         X Mots qui existent avec et sans 's': remplacer par la version singulier
     X Effectuer les substitutions PROGRESSIVEMENT
     - Corrections manuelles, spellchecker?
+        - Ajouter des mots (suite aux corrections)
     - Enlever mots peu fréquents qui n'ont pas d'embedding!!!
 
 - Améliorer embeddings
