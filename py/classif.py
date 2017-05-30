@@ -11,8 +11,10 @@ def load_data(batch_size=32):
     with open('fqsp.pkl', 'rb') as f:
         ans_id, ans_question, ans_body = pickle.load(f)
     
-    with open('w2v.pkl', 'rb') as f:
-        ans_embed = pickle.load(f)
+    with open('dualrepr.pkl', 'rb') as f:
+        ans_embed, ans_counts = pickle.load(f)
+
+    ans_counts = np.array(ans_counts.todense())
 
     # raw ans_question: 4-17
     ans_question = np.array(ans_question)
@@ -30,6 +32,7 @@ def load_data(batch_size=32):
     np.random.shuffle(rand_idx)
     ans_embed = ans_embed[rand_idx]
     ans_question = ans_question[rand_idx]
+    ans_counts = ans_counts[rand_idx]
     
     # Convert to categorical
     ans_question_cat = to_categorical(ans_question, num_classes)
@@ -41,64 +44,63 @@ def load_data(batch_size=32):
     print('N train, val, test: {} {} {}'.format(n_train, n_val, n_test))
     
     data = {
-        'X_train': ans_embed[:n_train],
+        'X_train': [ans_embed[:n_train], ans_counts[:n_train]],
         'y_train': ans_question_cat[:n_train],
-        'X_val': ans_embed[n_train:n_train + n_val],
+        'X_val': [ans_embed[n_train:n_train + n_val], ans_counts[n_train:n_train + n_val]],
         'y_val': ans_question_cat[n_train:n_train + n_val],
-        'X_test': ans_embed[-n_test:],
+        'X_test': [ans_embed[-n_test:], ans_counts[-n_test:]],
         'y_test': ans_question_cat[-n_test:]
     }
     
-    for k, v in data.items():
-        print(k, v.shape)
+    #for k, v in data.items():
+    #    print(k, v.shape)
     
     # Vérifier qu'il n'y a pas d'overlap
-    print('Vérifier overlap...')
-    def verif_overlap(a, b):
-        nb_cas = 0
-        for i, x1 in enumerate(a):
-            print('\r' + str(i), end='')
-            for x2 in b:
-                if np.all(x1 == x2):
-                    nb_cas += 1
-                    break
-        print('')
-        return nb_cas
-    n_cas_val = verif_overlap(data['X_train'], data['X_val'])
-    n_cas_test = verif_overlap(data['X_train'], data['X_test'])
-    print("Cas d'overlap: Val {}  Test {}".format(n_cas_val, n_cas_test))
+    # print('Vérifier overlap...')
+    # def verif_overlap(a, b):
+    #     nb_cas = 0
+    #     for i, x1 in enumerate(a):
+    #         print('\r' + str(i), end='')
+    #         for x2 in b:
+    #             if np.all(x1 == x2):
+    #                 nb_cas += 1
+    #                 break
+    #     print('')
+    #     return nb_cas
+    # n_cas_val = verif_overlap(data['X_train'], data['X_val'])
+    # n_cas_test = verif_overlap(data['X_train'], data['X_test'])
+    # print("Cas d'overlap: Val {}  Test {}".format(n_cas_val, n_cas_test))
+    #
+    # print('Bin count train: ', np.bincount(np.argmax(data['y_train'], axis=1)))
+    # print('Bin count val:   ', np.bincount(np.argmax(data['y_val'], axis=1)))
+    # print('Bin count test:  ', np.bincount(np.argmax(data['y_test'], axis=1)))
     
-    print('Bin count train: ', np.bincount(np.argmax(data['y_train'], axis=1)))
-    print('Bin count val:   ', np.bincount(np.argmax(data['y_val'], axis=1)))
-    print('Bin count test:  ', np.bincount(np.argmax(data['y_test'], axis=1)))
-    
-    train_dict = defaultdict(list)
-    for x, y in zip(ans_embed, ans_question):
-        train_dict[y].append(x)
+    embed_train_dict = defaultdict(list)
+    count_train_dict = defaultdict(list)
+    for x1, x2, y in zip(ans_embed, ans_counts, ans_question):
+        embed_train_dict[y].append(x1)
+        count_train_dict[y].append(x2)
     
     def gen():
         while True:
             x_batch, y_batch = [], []
             for c in np.random.choice(num_classes, size=batch_size):
-                idx = np.random.choice(len(train_dict[c]))
-                x_batch.append(train_dict[c][idx])
+                idx = np.random.choice(len(embed_train_dict[c]))
+                x_batch.append(embed_train_dict[c][idx])
                 y_batch.append(to_categorical(c, num_classes).ravel())
             yield np.array(x_batch), np.array(y_batch)
+            
+    def gen_dual():
+        while True:
+            x1_batch, x2_batch, y_batch = [], [], []
+            for c in np.random.choice(num_classes, size=batch_size):
+                idx = np.random.choice(len(embed_train_dict[c]))
+                x1_batch.append(embed_train_dict[c][idx])
+                x2_batch.append(count_train_dict[c][idx])
+                y_batch.append(to_categorical(c, num_classes).ravel())
+            yield [np.array(x1_batch), np.array(x2_batch)], np.array(y_batch)
     
-    return data, num_classes, gen
-    
-
-def build_model(num_classes):
-    model = Sequential()
-    model.add(BatchNormalization(input_shape=(64,)))
-    model.add(Dense(256, activation='relu'))
-    model.add(BatchNormalization())
-    model.add(Dense(1024, activation='relu'))
-    model.add(BatchNormalization())
-    model.add(Dense(num_classes, activation='softmax'))
-    
-    model.compile('adam', 'categorical_crossentropy', metrics=['acc'])
-    return model
+    return data, num_classes, gen, gen_dual
 
 
 def train(model: Sequential, data, gen=None, verbose=1, epochs=10):
@@ -112,12 +114,3 @@ def train(model: Sequential, data, gen=None, verbose=1, epochs=10):
                             verbose=verbose)
     
     return history
-
-
-if __name__ == '__main__':
-    data, num_classes, gen = load_data()
-    
-    model = build_model(num_classes)
-    
-    val_acc = train(model, data, gen)
-    print(val_acc)

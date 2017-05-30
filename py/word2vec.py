@@ -7,6 +7,7 @@ import sklearn.feature_extraction.text
 from sklearn.metrics.pairwise import cosine_similarity
 from unidecode import unidecode
 from tqdm import tqdm
+import scipy.sparse
 
 DIGITS = re.compile("[0-9]", re.UNICODE)
 
@@ -64,6 +65,11 @@ class Embedder:
         # Save embeddings
         with open('w2v.pkl', 'wb') as f:
             pickle.dump(self.ans_embed, f, pickle.HIGHEST_PROTOCOL)
+            
+        # Save embed + counts
+        sparse_counts = scipy.sparse.csr_matrix(self.ans_counts)  # Compressed Sparse Row
+        with open('dualrepr.pkl', 'wb') as f:
+            pickle.dump((self.ans_embed, sparse_counts), f, pickle.HIGHEST_PROTOCOL)
 
     def vocab_correction(self):
         # Charger corrections orthographiques
@@ -162,13 +168,14 @@ class Embedder:
         return True
     
     def embed_phrase(self, phrase):
-        counts = self.vectorizer.transform([phrase])
-        counts = counts.toarray().ravel()
-        mots = np.argwhere(counts).ravel()
-        ans_embed = np.zeros((self.embeddings.shape[1],))
-        for m in mots:
-            ans_embed += self.embeddings[m]
-        return ans_embed
+        raise NotImplementedError()
+        # counts = self.vectorizer.transform([phrase])
+        # counts = counts.toarray().ravel()
+        # mots = np.argwhere(counts).ravel()
+        # ans_embed = np.zeros((self.embeddings.shape[1],))
+        # for m in mots:
+        #     ans_embed += self.embeddings[m]
+        # return ans_embed
     
     def embed_counts_matrix(self):
         ans_embed = np.zeros((self.ans_counts.shape[0], self.embeddings.shape[1]))
