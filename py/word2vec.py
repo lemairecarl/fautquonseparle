@@ -20,39 +20,18 @@ class Embedder:
         # Constituer un vocabulaire initial (contenant des fautes d'orthographe et des pluriels)
         self.vectorizer = sklearn.feature_extraction.text.CountVectorizer(encoding='utf-8', stop_words=stopwords)
         self.ans_counts = self.vectorizer.fit_transform(self.ans_body)
-
-        # TODO
-        # 0. Extraire vocab et ans_counts
-        # 1. Charger corrections: old --> [new1, new2]
-        # 2. Ajouter nouveaux mots au vocab
-        # 3. Faire substitutions
-        # 4. Enlever mots inutilisés de vocab et ans_counts
-
-        # Charger corrections orthographiques
-        sub_corr = self.vocab_correction()
-        self.substitution_orthographe(sub_corr)  # Modifie ans_counts directement
-
         self.id_to_word = self.vectorizer.get_feature_names()
         
         # Réduire le vocabulaire
         self.substitutions = {}
         self.mots_restants = dict(enumerate(self.id_to_word))
-        self.retirer_mots_inutiles()
         self.retirer_nombres()
         self.fusionner_pluriel()
         self.remplacer_accents_exotiques()
         sub_embed = self.substitution_accents()
         
-        # Faire le pont entre les deux vocabulaires. id_voc_dataset -> id_voc_embed
-        self.data_to_emb = {}
-        for m in self.mots_restants:
-            emb_i = sub_embed.get(m, None)  # D'abord traiter les substitution mot_dataset -> mot_embed
-            if emb_i is None:
-                emb_i = self.emb_to_id.get(self.id_to_word[m], 0)  # 0 correspond a l'embedding nul (vecteur nul)
-            self.data_to_emb[m] = emb_i
-        
         # Convertir en matrice dense avant de faire les substitutions
-        # self.ans_counts = self.ans_counts.todense()
+        self.ans_counts = self.ans_counts.todense()
         
         print('Effectuer les substitutions')
         # Effectuer les substitutions
@@ -61,6 +40,18 @@ class Embedder:
                 self.ans_counts[ans_i, new] += self.ans_counts[ans_i, old]
                 self.ans_counts[ans_i, old] = 0
         
+        # Effectuer les substitution orthographiques
+        sub_corr = self.vocab_correction()
+        self.substitution_orthographe(sub_corr)  # Modifie ans_counts directement
+        
+        # Faire le pont entre les deux vocabulaires. id_voc_dataset -> id_voc_embed
+        self.data_to_emb = {}
+        for m in self.mots_restants:
+            emb_i = sub_embed.get(m, None)  # D'abord traiter les substitution mot_dataset -> mot_embed
+            if emb_i is None:
+                emb_i = self.emb_to_id.get(self.id_to_word[m], 0)  # 0 correspond a l'embedding nul (vecteur nul)
+            self.data_to_emb[m] = emb_i
+            
         # Enlever les mots retirés
         mots_enleves = np.array([m for m in range(len(self.id_to_word)) if m not in self.mots_restants])
         self.ans_counts[:, mots_enleves] = 0
@@ -83,6 +74,7 @@ class Embedder:
         new_word_id = sorted(self.vectorizer.vocabulary_.values())[-1] + 1
         num_new_words = 0
     
+        # Batir dict de substitution, et ajouter les mots au dict vocab
         for l in lignes:
             old, new = l.strip().split(',')
             new_words = new.split(' ')
@@ -95,13 +87,17 @@ class Embedder:
                         wid = new_word_id
                         new_word_id += 1
                         num_new_words += 1
+                        self.ajouter(wid, w)
                     new_ids.append(wid)
             sub_corr[self.vectorizer.vocabulary_[old]] = new_ids
+
+        # Mettre a jour relation inverse
+        self.id_to_word = self.vectorizer.get_feature_names()
     
         # Ajouter les nouveaux mots a ans_counts
         nw, nf = self.ans_counts.shape
         new_counts = np.zeros((nw, nf + num_new_words), dtype=np.int8)
-        new_counts[:, :nf] = self.ans_counts.todense()
+        new_counts[:, :nf] = self.ans_counts
         self.ans_counts = new_counts
     
         return sub_corr
@@ -112,12 +108,6 @@ class Embedder:
             c = self.ans_counts[ans_touches, old]
             self.ans_counts[ans_touches, old] = 0
             self.ans_counts[ans_touches, new] = c  # new est une liste
-    
-    def retirer_mots_inutiles(self):
-        word_counts = np.sum(self.ans_counts, axis=0)
-        inutiles = np.argwhere(word_counts == 0).ravel()
-        for wi in inutiles:
-            self.retirer(wi)
      
     def load_stopwords(self, filename):
         stopwords = []
@@ -226,7 +216,10 @@ class Embedder:
         self.retirer(old)
     
     def retirer(self, old):
-        self.mots_restants.pop(old)
+        self.mots_restants.pop(old, None)
+    
+    def ajouter(self, i, w):
+        self.mots_restants[i] = w
     
     def iter_mots_restants(self):
         """Permet d'iterer sur le dict en le modifiant"""
@@ -261,16 +254,19 @@ class Embedder:
         word_counts = np.array(np.sum(self.ans_counts, axis=0)).squeeze()
         nb_mots_suppr = np.sum(word_counts == 0)
         sorted_i = np.argsort(word_counts)[nb_mots_suppr:]  # Exclure les mots supprimés
+        nouv_mots = []
         with open('mots.txt', 'w') as f:
             f.write('Mots avant: {}\n'.format(len(self.id_to_word)))
             f.write('Mots apres: {}\n'.format(len(self.mots_restants)))
             for m in sorted_i:
-                indic_nouv = 'NOUV' if self.data_to_emb[m] == 0 else ''
+                indic_nouv = ''
+                if self.data_to_emb[m] == 0:
+                    indic_nouv = 'NOUV'
+                    nouv_mots.append(m)
                 f.write('{:<3} {:<20} {}\n'.format(word_counts[m], self.id_to_word[m], indic_nouv))
         with open('nouv.txt', 'w') as f:
-            for m in self.mots_restants:
-                if self.data_to_emb[m] == 0:
-                    f.write('{},{}\n'.format(m, self.mots_restants[m]))
+            for m in nouv_mots:
+                f.write('{:<4} {:<3} {}\n'.format(m, word_counts[m], self.mots_restants[m]))
 
     def substitution_accents(self):
         print('Oubli accents')
