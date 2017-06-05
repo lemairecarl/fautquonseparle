@@ -1,11 +1,21 @@
+function preload() {
+    jsondata = loadJSON('../fqsp.json');
+}
+
 function setup() {
+    colorPalette = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
+
     createCanvas(windowWidth, windowHeight);
-    words = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'];
-    vecs = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]];
+    //words = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'];
+    //vecs = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]];
+    words = jsondata.words;
+    vecs = jsondata.vecs;
+    q = jsondata.q;
 
     scale = 40.0;
     zoom = 1.0;
-    zoomSpeed = 0.1;
+    zoomSpeed = 0.05;
+    zoomExtent = [0.5, 20.0]
 
     windowOrigin = [windowWidth / 2, windowHeight / 2]
     worldOrigin = [0.0, 0.0]
@@ -15,12 +25,13 @@ function draw() {
     background('white');
 
     for(var i = 0; i < words.length; i++) {
-        windowCoord = worldToWindow(vecs[i])
+        windowCoord = worldToWindow(vecs[i]);
+        fill(colorPalette[q[i]]);
         text(
             words[i],
             windowCoord[0],
             windowCoord[1]
-            )
+            );
     }
 }
 
@@ -48,7 +59,7 @@ function mouseWheel(event) {
     windowOrigin = mouseCoord();
 
     zoom += event.delta * zoomSpeed;
-    zoom = constrain(zoom, 0.5, 20.0);
+    zoom = constrain(zoom, zoomExtent[0], zoomExtent[1]);
 
     return false;
 }

@@ -1,5 +1,7 @@
 .idea/
 embeddings/
+py/bhtsne.py
+py/bh_tsne
 
 *.pyc
 *.tsv
