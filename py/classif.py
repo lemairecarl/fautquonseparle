@@ -27,6 +27,9 @@ def load_data(batch_size=32):
     num_classes = 10
     assert len(np.unique(ans_question)) == num_classes
     
+    # Make complete dual data for producing vectors
+    dual_data = [ans_embed, ans_counts]
+    
     # Shuffle the stuff
     rand_idx = np.arange(len(ans_question))
     np.random.shuffle(rand_idx)
@@ -100,7 +103,7 @@ def load_data(batch_size=32):
                 y_batch.append(to_categorical(c, num_classes).ravel())
             yield [np.array(x1_batch), np.array(x2_batch)], np.array(y_batch)
     
-    return data, num_classes, gen, gen_dual
+    return data, num_classes, gen, gen_dual, dual_data
 
 
 def train(model: Sequential, data, gen=None, verbose=1, epochs=10):
@@ -114,3 +117,7 @@ def train(model: Sequential, data, gen=None, verbose=1, epochs=10):
                             verbose=verbose)
     
     return history
+
+
+def reembed(dual_data, model):
+    pass

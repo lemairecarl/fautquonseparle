@@ -2,3 +2,5 @@
 embeddings/
 
 *.pyc
+*.tsv
+*.pkl
