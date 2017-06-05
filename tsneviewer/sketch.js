@@ -18,7 +18,7 @@ function setup() {
 
     scale = 40.0;
     zoom = 1.0;
-    zoomSpeed = 0.02;
+    zoomSpeed = 0.01;
     zoomExtent = [0.2, 20.0]
 
     windowOrigin = [windowWidth / 2, windowHeight / 2]
@@ -104,7 +104,7 @@ function mouseWheel(event) {
     worldOrigin = windowToWorld(mouseCoord());
     windowOrigin = mouseCoord();
 
-    zoom += event.delta * zoomSpeed;
+    zoom -= event.delta * zoomSpeed;
     zoom = constrain(zoom, zoomExtent[0], zoomExtent[1]);
 
     return false;
