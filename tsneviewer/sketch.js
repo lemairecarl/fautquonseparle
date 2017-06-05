@@ -14,8 +14,8 @@ function setup() {
 
     scale = 40.0;
     zoom = 1.0;
-    zoomSpeed = 0.05;
-    zoomExtent = [0.5, 20.0]
+    zoomSpeed = 0.02;
+    zoomExtent = [0.2, 20.0]
 
     windowOrigin = [windowWidth / 2, windowHeight / 2]
     worldOrigin = [0.0, 0.0]
@@ -26,13 +26,20 @@ function draw() {
 
     for(var i = 0; i < words.length; i++) {
         windowCoord = worldToWindow(vecs[i]);
-        fill(colorPalette[q[i]]);
-        text(
-            words[i],
-            windowCoord[0],
-            windowCoord[1]
-            );
+        if (isInsideWindow(windowCoord)) {
+            fill(colorPalette[q[i]]);
+            text(
+                words[i],
+                windowCoord[0],
+                windowCoord[1]
+                );
+        }
     }
+}
+
+function isInsideWindow(coord) {
+    return coord[0] > -200 && coord[0] < windowWidth + 200
+        && coord[1] > -200 && coord[1] < windowHeight + 200
 }
 
 function worldToWindow(coord) {

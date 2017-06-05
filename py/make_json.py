@@ -2,7 +2,7 @@ import pickle
 import json
 import numpy as np
 
-MAX_ENTRIES = 2000
+MAX_ENTRIES = 999999
 
 # Load pkl data
 #with open('w2v.pkl', 'rb') as f:
