@@ -16,6 +16,13 @@ function setup() {
     vecs = jsondata.vecs;
     q = jsondata.q;
 
+    // Shuffling the order of display for justice
+    order = [];
+    for(var i = 0; i < words.length; i++) {
+        order[i] = i;
+    }
+    order = fyshuffle(order);
+
     scale = 40.0;
     zoom = 1.0;
     zoomSpeed = 0.01;
@@ -23,13 +30,13 @@ function setup() {
 
     windowOrigin = [windowWidth / 2, windowHeight / 2]
     worldOrigin = [0.0, 0.0]
+
+    shuffleWait = false;
 }
 
 function draw() {
     background('white');
 
-    closest = 0
-    closestDist = 9999
     if (zoom < 0.5) {
         skip = 8;
     } else if (zoom < 1.0) {
@@ -39,7 +46,18 @@ function draw() {
     } else {
         skip = 1;
     }
-    for(var i = 0; i < words.length; i += skip) {
+
+    for(var j = 0; j < order.length; j += skip) {
+        var i = order[j];
+        windowCoord = worldToWindow(vecs[i]);
+        fill(210);
+        rect(windowCoord[0], windowCoord[1], 20, 20);
+    }
+
+    closest = 0;
+    closestDist = 9999;
+    for(var j = 0; j < order.length; j += skip) {
+        var i = order[j];
         windowCoord = worldToWindow(vecs[i]);
         if (isInsideWindow(windowCoord)) {
             distToMouse = sqDist(mouseCoord(), windowCoord);
@@ -107,6 +125,10 @@ function mouseWheel(event) {
     zoom -= event.delta * zoomSpeed;
     zoom = constrain(zoom, zoomExtent[0], zoomExtent[1]);
 
+    if (event.delta > 0.0) {
+        shuffleDisplay();
+    }
+
     return false;
 }
 
@@ -118,4 +140,33 @@ function windowResized() {
 function mouseDragged() {
     windowOrigin[0] += mouseX - pmouseX;
     windowOrigin[1] += mouseY - pmouseY;
+}
+
+function shuffleDisplay() {
+    if (shuffleWait) return;
+
+    order = fyshuffle(order);
+    shuffleWait = true;
+    setTimeout(function(){ shuffleWait = false; }, 2000);
+}
+
+function fyshuffle(array) {
+    // Fisher-Yates (from Mike Bostock)
+    var counter = array.length;
+
+    // While there are elements in the array
+    while (counter > 0) {
+        // Pick a random index
+        var index = Math.floor(Math.random() * counter);
+
+        // Decrease counter by 1
+        counter--;
+
+        // And swap the last element with it
+        var temp = array[counter];
+        array[counter] = array[index];
+        array[index] = temp;
+    }
+
+    return array;
 }
