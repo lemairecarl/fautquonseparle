@@ -1,3 +1,4 @@
 - Points d'intérêt sauvegardés (document.cookie)
 - Partager points d'intérêt (créer lien avec hashtag, window.location.hash)
     - NOTER VERSION DU TSNE
+- Nommer épingles

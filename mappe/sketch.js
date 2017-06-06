@@ -59,9 +59,16 @@ function setup() {
 }
 
 function initEpingles() {
-    pinstr = decodeURI(window.location.hash.substring(1));
+    pinstr = window.location.hash.substring(1);
     if (pinstr != '') {
-        epingles = JSON.parse(pinstr);
+        epingles = JSON.parse(decodeURI(pinstr));
+        majPinList();
+        return;
+    }
+
+    pinstr = getCookie('epingles');
+    if (pinstr != '') {
+        epingles = JSON.parse(decodeURI(pinstr));
         majPinList();
     }
 }
@@ -251,9 +258,11 @@ function majPinList() {
     pinList = document.getElementById('pinlist');
     pinList.innerHTML = '';
     for (var i = 0; i < epingles.length; i++) {
-        pinList.innerHTML += '<li onclick="focusPin(' + i + ')">Épingle ' + (i+1) + '</li>';
+        pinList.innerHTML += '<li onclick="focusPin(' + i + ')">Épingle ' + (i+1) + ' <div class="suppr">✕</div></li>';
     }
-    window.location.hash = '#' + encodeURI(JSON.stringify(epingles));
+    pinstr = encodeURI(JSON.stringify(epingles))
+    window.location.hash = '#' + pinstr;
+    setCookie('epingles', pinstr, 7);  // garder 7 jours
 }
 
 function focusPin(i) {
@@ -301,4 +310,27 @@ function fyshuffle(array) {
     }
 
     return array;
+}
+
+function setCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires="+ d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(';');
+    for(var i = 0; i <ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
 }
