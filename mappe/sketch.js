@@ -37,7 +37,7 @@ function setup() {
     }
     order = fyshuffle(order);
 
-    scale = 40.0;
+    scaleFactor = 40.0;
     zoom = 0.2;
     zoomSpeed = 0.01;
     zoomExtent = [0.2, 20.0];
@@ -48,6 +48,7 @@ function setup() {
     dragStart = [0.0, 0.0];
     curseur = [-1000, -1000];
     activerCurseur = false;
+    epingles = [];
 
     shuffleWait = false;
     oldClosest = -1;
@@ -89,10 +90,17 @@ function draw() {
         }
     }
 
+    // Dessiner les epingles
+    for (var i = 0; i < epingles.length; i++) {
+        fill('red');
+        pinWindow = worldToWindow(epingles[i]);
+        ellipse(pinWindow[0], pinWindow[1], 20);
+    }
+
     // Dessiner le curseur
-    fill('red');
+    fill('yellow');
     curseurWindow = worldToWindow(curseur);
-    ellipse(curseurWindow[0], curseurWindow[1], 20);
+    ellipse(curseurWindow[0], curseurWindow[1], 16);
 
     // Dessiner le texte en surbrillance
     drawWord(closest, true);
@@ -141,15 +149,15 @@ function isInsideWindow(coord) {
 
 function worldToWindow(coord) {
     return [
-        (coord[0] - worldOrigin[0]) * scale * zoom + windowOrigin[0],
-        (coord[1] - worldOrigin[1]) * scale * zoom + windowOrigin[1]
+        (coord[0] - worldOrigin[0]) * scaleFactor * zoom + windowOrigin[0],
+        (coord[1] - worldOrigin[1]) * scaleFactor * zoom + windowOrigin[1]
     ];
 }
 
 function windowToWorld(coord) {
     return [
-        (coord[0] - windowOrigin[0]) / (scale * zoom) + worldOrigin[0],
-        (coord[1] - windowOrigin[1]) / (scale * zoom) + worldOrigin[1]
+        (coord[0] - windowOrigin[0]) / (scaleFactor * zoom) + worldOrigin[0],
+        (coord[1] - windowOrigin[1]) / (scaleFactor * zoom) + worldOrigin[1]
     ];
 }
 
@@ -185,6 +193,7 @@ function mousePressed() {
 
 function mouseReleased() {
     isDragging = false;
+
     if (sqDist(mouseCoord(), dragStart) < 16.0) {
         // Register as a click
         if (activerCurseur) curseur = windowToWorld(mouseCoord());
@@ -196,6 +205,10 @@ function mouseDragged() {
         windowOrigin[0] = dragStartOrigin[0] + (mouseX - dragStart[0]);
         windowOrigin[1] = dragStartOrigin[1] + (mouseY - dragStart[1]);
     }
+}
+
+function epingler () {
+    epingles.push(vecCopy(curseur));
 }
 
 function shuffleDisplay() {

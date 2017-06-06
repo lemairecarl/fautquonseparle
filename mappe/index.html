@@ -60,6 +60,25 @@
      #splash #signature {
       font-style: italic;
      }
+
+     #pins {
+      position: fixed;
+      right: 0;
+      top: 0;
+      z-index: 2;
+      background-color: white;
+      padding: 0.5em;
+
+      cursor: default;
+      -webkit-user-select: none; /* Safari */
+      -khtml-user-select: none; /* Konqueror HTML */
+      -moz-user-select: none; /* Firefox */
+      -ms-user-select: none; /* Internet Explorer/Edge */
+      user-select: none;
+     }
+     #pins button {
+      cursor: pointer;
+     }
   </style>
   </head>
   <body>
@@ -79,6 +98,10 @@
       <span id="idlabel">Rép. #<span id="ans_id"></span></span>
     </div>
     <div id="reponse"></div>
+  </div>
+  <div id="pins" onmouseenter="activerCurseur = false;" onmouseleave="activerCurseur = true;">
+    <strong>Épingles</strong>
+    <button onclick="epingler()">＋</button>
   </div>
   </body>
 </html>
