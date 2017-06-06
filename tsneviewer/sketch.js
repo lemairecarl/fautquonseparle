@@ -1,9 +1,21 @@
-function preload() {
+﻿function preload() {
     jsondata = loadJSON('../fqsp.json');
 }
 
 function setup() {
     colorPalette = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
+    questionLabels = {
+        3: "Indépendance: Comment se remettre en marche?",
+        4: "Éducation: Comment permettre à tout le monde de réaliser son plein potentiel?",
+        9: "Climat: Comment enclencher la transition?",
+        0: "Démocratie: Comment reprendre le pouvoir?",
+        1: "Économie: Comment développer le Québec selon nos priorités?",
+        8: "Santé: Comment prendre soin de tout le monde?",
+        5: "Premiers Peuples: Comment construire la solidarité entre nous?",
+        7: "Culture: Comment favoriser une création artistique vivante et en assurer l’accès à tous?",
+        6: "Diversité: Comment vivre ensemble sans racisme ni discrimination?",
+        2: "Régions: Comment dynamiser toutes nos communautés?"
+    };
 
     createCanvas(windowWidth, windowHeight);
     textAlign(CENTER, CENTER);
@@ -12,19 +24,20 @@ function setup() {
 
     //words = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'];
     //vecs = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]];
-    words = jsondata.words;
+    textShort = jsondata.court;
+    textLong = jsondata.long;
     vecs = jsondata.vecs;
     q = jsondata.q;
 
     // Shuffling the order of display for justice
     order = [];
-    for(var i = 0; i < words.length; i++) {
+    for(var i = 0; i < textShort.length; i++) {
         order[i] = i;
     }
     order = fyshuffle(order);
 
     scale = 40.0;
-    zoom = 1.0;
+    zoom = 0.2;
     zoomSpeed = 0.01;
     zoomExtent = [0.2, 20.0]
 
@@ -32,11 +45,13 @@ function setup() {
     worldOrigin = [0.0, 0.0]
 
     shuffleWait = false;
+    oldClosest = -1;
 }
 
 function draw() {
     background('white');
 
+    var skip;
     if (zoom < 0.5) {
         skip = 8;
     } else if (zoom < 1.0) {
@@ -54,8 +69,8 @@ function draw() {
         rect(windowCoord[0], windowCoord[1], 20, 20);
     }
 
-    closest = 0;
-    closestDist = 9999;
+    var closestDist = 9999;
+    var closest = 0;
     for(var j = 0; j < order.length; j += skip) {
         var i = order[j];
         windowCoord = worldToWindow(vecs[i]);
@@ -69,20 +84,27 @@ function draw() {
         }
     }
     drawWord(closest, true);
+
+    if (closest != oldClosest) {
+        document.getElementById('question').innerHTML = questionLabels[q[closest]];
+        document.getElementById('question').setAttribute('style', 'border-left: 10px solid ' + colorPalette[q[closest]])
+        document.getElementById('reponse').innerHTML = textLong[closest];
+    }
+    oldClosest = closest;
 }
 
 function drawWord(i, hover=false) {
     windowCoord = worldToWindow(vecs[i]); //TODO optimiser
     if (hover) {
         fill('white');
-        tw = textWidth(words[i]);
+        tw = textWidth(textShort[i]);
         rect(windowCoord[0], windowCoord[1], tw, textSize());
         fill('black');
     } else {
         fill(colorPalette[q[i]]);
     }
     text(
-        words[i],
+        textShort[i],
         windowCoord[0],
         windowCoord[1]
         );

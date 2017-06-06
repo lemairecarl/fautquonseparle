@@ -26,7 +26,8 @@ assert len(np.unique(ans_question)) == num_classes
 # Write to JSON
 with open('../fqsp.json', 'w') as f:
     json.dump({
-        'words': [a[:100] for a in ans_body[:MAX_ENTRIES]],
+        'court': [a[:80] for a in ans_body[:MAX_ENTRIES]],
+        'long': ans_body[:MAX_ENTRIES],
         'vecs': ans_tsne[:MAX_ENTRIES].tolist(),
         'q': ans_question[:MAX_ENTRIES].tolist()
     }, f)
