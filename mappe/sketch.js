@@ -53,6 +53,7 @@ function setup() {
     initEpingles();
     focusedPin = -1;
     focusStart = null;
+    empecherFocus = false;
 
     shuffleWait = false;
     oldClosest = -1;
@@ -258,7 +259,9 @@ function majPinList() {
     pinList = document.getElementById('pinlist');
     pinList.innerHTML = '';
     for (var i = 0; i < epingles.length; i++) {
-        pinList.innerHTML += '<li onclick="focusPin(' + i + ')">Épingle ' + (i+1) + ' <div class="suppr">✕</div></li>';
+        elementHTML = '<li onclick="focusPin(' + i + ')">Épingle ' + (i+1);
+        elementHTML += '<div class="suppr" onclick="delPin(' + i + ')">✕</div></li>';
+        pinList.innerHTML += elementHTML;
     }
     pinstr = encodeURI(JSON.stringify(epingles))
     window.location.hash = '#' + pinstr;
@@ -266,8 +269,11 @@ function majPinList() {
 }
 
 function focusPin(i) {
+    if (empecherFocus) return;
+
     worldOrigin = epingles[i];
     windowOrigin = windowCenter();
+    console.log(windowOrigin);
     focusedPin = i;
 
     focusStart = Date.now();
@@ -276,6 +282,14 @@ function focusPin(i) {
             focusedPin = -1;
         }
         }, 2000);
+}
+
+function delPin(i) {
+    empecherFocus = true;
+    setTimeout(function(){ empecherFocus = false; }, 100); //TODO Dites bonjour a ce hack tres laid
+
+    epingles.splice(i, 1);
+    majPinList();
 }
 
 function partager() {
