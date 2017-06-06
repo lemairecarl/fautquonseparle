@@ -78,7 +78,7 @@ function draw() {
     }
 
     var closestDist = 9999;
-    var closest = 0;
+    var closest = -1;
     for(var j = 0; j < order.length; j += skip) {
         var i = order[j];
         windowCoord = worldToWindow(vecs[i]);
@@ -109,17 +109,22 @@ function draw() {
     curseurWindow = worldToWindow(curseur);
     ellipse(curseurWindow[0], curseurWindow[1], 16);
 
-    // Dessiner le texte en surbrillance
-    drawWord(closest, true);
+    if (closest != -1) {
+        // Dessiner le texte en surbrillance
+        drawWord(closest, true);
 
-    // Maj le panneau
-    if (closest != oldClosest) {
-        document.getElementById('qtext').innerHTML = questionLabels[q[closest]];
-        document.getElementById('ans_id').innerHTML = ansId[closest];
-        document.getElementById('question').setAttribute('style', 'border-left: 10px solid ' + colorPalette[q[closest]]);
-        document.getElementById('reponse').innerHTML = textLong[closest];
+        // Maj le panneau
+        if (closest != oldClosest) {
+            document.getElementById('panneau').style.visibility = 'visible';
+            document.getElementById('qtext').innerHTML = questionLabels[q[closest]];
+            document.getElementById('ans_id').innerHTML = ansId[closest];
+            document.getElementById('question').setAttribute('style', 'border-left: 10px solid ' + colorPalette[q[closest]]);
+            document.getElementById('reponse').innerHTML = textLong[closest];
+        }
+        oldClosest = closest;
+    } else {
+        document.getElementById('panneau').style.visibility = 'hidden';
     }
-    oldClosest = closest;
 }
 
 function drawWord(i, hover=false) {
