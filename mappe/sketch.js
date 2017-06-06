@@ -50,28 +50,30 @@ function setup() {
     isMouseOnUI = true;
 
     epingles = []
-    initEpingles();
     focusedPin = -1;
     focusStart = null;
     empecherFocus = false;
 
     shuffleWait = false;
     oldClosest = -1;
+
+    initEpingles();
 }
 
 function initEpingles() {
-    pinstr = window.location.hash.substring(1);
-    if (pinstr != '') {
-        epingles = JSON.parse(decodeURI(pinstr));
-        majPinList();
-        return;
+    hashstr = window.location.hash.substring(1);
+    cookiestr = getCookie('epingles');
+
+    if (hashstr != '') {
+        // Vérifier d'abord l'url
+        pinstr = hashstr;
+    } else if (cookiestr != '') {
+        // Ensuite vérifier le cookie
+        pinstr = cookiestr;
     }
 
-    pinstr = getCookie('epingles');
-    if (pinstr != '') {
-        epingles = JSON.parse(decodeURI(pinstr));
-        majPinList();
-    }
+    epingles = JSON.parse(decodeURI(pinstr));
+    if (epingles.length != 0) majPinList();
 }
 
 function draw() {
