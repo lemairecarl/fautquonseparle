@@ -44,6 +44,9 @@ function setup() {
 
     windowOrigin = [windowWidth / 2, windowHeight / 2]
     worldOrigin = [0.0, 0.0]
+    curseur = [0.0, 0.0]
+    isDragging = false;
+    dragStart = [0.0, 0.0]
 
     shuffleWait = false;
     oldClosest = -1;
@@ -84,8 +87,16 @@ function draw() {
             drawWord(i);
         }
     }
+
+    // Dessiner le curseur
+    fill('red');
+    curseurWindow = worldToWindow(curseur);
+    ellipse(curseurWindow[0], curseurWindow[1], 20);
+
+    // Dessiner le texte en surbrillance
     drawWord(closest, true);
 
+    // Maj le panneau
     if (closest != oldClosest) {
         document.getElementById('qtext').innerHTML = questionLabels[q[closest]];
         document.getElementById('ans_id').innerHTML = ansId[closest];
@@ -116,6 +127,10 @@ function sqDist(a, b) {
     dx = a[0] - b[0];
     dy = a[1] - b[1];
     return dx * dx + dy * dy;
+}
+
+function vecCopy(v) {
+    return v.slice();
 }
 
 function isInsideWindow(coord) {
@@ -161,9 +176,25 @@ function windowResized() {
 	windowOrigin = [windowWidth / 2, windowHeight / 2]
 }
 
+function mousePressed() {
+    dragStart = mouseCoord();
+    dragStartOrigin = vecCopy(windowOrigin);
+    isDragging = true;
+}
+
+function mouseReleased() {
+    isDragging = false;
+    if (sqDist(mouseCoord(), dragStart) < 16.0) {
+        // Register as a click
+        curseur = windowToWorld(mouseCoord());
+    }
+}
+
 function mouseDragged() {
-    windowOrigin[0] += mouseX - pmouseX;
-    windowOrigin[1] += mouseY - pmouseY;
+    if (isDragging) {
+        windowOrigin[0] = dragStartOrigin[0] + (mouseX - dragStart[0]);
+        windowOrigin[1] = dragStartOrigin[1] + (mouseY - dragStart[1]);
+    }
 }
 
 function shuffleDisplay() {
