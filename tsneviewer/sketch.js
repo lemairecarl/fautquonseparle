@@ -50,7 +50,7 @@ function setup() {
 }
 
 function draw() {
-    background('white');
+    background(240);
 
     var skip;
     if (zoom < 0.5) {

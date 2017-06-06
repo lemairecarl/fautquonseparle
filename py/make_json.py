@@ -8,6 +8,7 @@ MAX_ENTRIES = 999999
 #with open('w2v.pkl', 'rb') as f:
 #    ans_embed = pickle.load(f)
 ans_tsne = np.loadtxt('fqsp_tsne_p20i1000.tsv', delimiter='\t')
+ans_tsne = ans_tsne[:, ::-1]  # meilleur pour paysage
 
 with open('fqsp.pkl', 'rb') as f:
     ans_id, ans_question, ans_body = pickle.load(f)
@@ -26,7 +27,12 @@ num_classes = 10
 assert len(np.unique(ans_question)) == num_classes
 
 # Créer versions courtes pour aperçu
-ans_court = [a[:80].replace('\n', ' ').replace('\r', '') for a in ans_body[:MAX_ENTRIES]]
+ans_court = []
+longueur_apercu = 80
+for texte in ans_body:
+    if len(texte) > longueur_apercu:
+        texte = texte[:longueur_apercu] + '…'
+    ans_court.append(texte.replace('\n', ' ').replace('\r', ''))
 
 # Write to JSON
 with open('../fqsp.json', 'w') as f:
