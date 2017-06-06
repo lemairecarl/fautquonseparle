@@ -99,6 +99,10 @@ a {
  }
  #pins ul li .suppr {
   float: right;
+  padding:0 2px 0 2px;
+ }
+ #pins ul li .suppr:hover {
+  background-color: #aeaeae;
  }
  #pins a {
   display: block;

@@ -253,7 +253,9 @@ function epingler () {
         curseur = [0.0, 0.0];
     }
 
-    epingles.push(vecCopy(curseur));
+    nom = window.prompt('Nommez l\'épingle:', 'Épingle ' + (epingles.length + 1));
+
+    epingles.push([curseur[0], curseur[1], nom]);
     majPinList();
 }
 
@@ -261,7 +263,7 @@ function majPinList() {
     pinList = document.getElementById('pinlist');
     pinList.innerHTML = '';
     for (var i = 0; i < epingles.length; i++) {
-        elementHTML = '<li onclick="focusPin(' + i + ')">Épingle ' + (i+1);
+        elementHTML = '<li onclick="focusPin(' + i + ')">' + epingles[i][2];
         elementHTML += '<div class="suppr" onclick="delPin(' + i + ')">✕</div></li>';
         pinList.innerHTML += elementHTML;
     }
