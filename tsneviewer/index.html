@@ -6,6 +6,9 @@
   <style>
     body {padding: 0; margin: 0;}
     canvas { position:fixed; top:0; left:0; z-index:1; }
+    a {
+      color: #3172d8;
+    }
 
     #panneau {
       position:fixed;
@@ -14,8 +17,8 @@
       background-color: white;
       padding: 1em;
 
-      border-right: 2px solid #eee;
-      border-top: 2px solid #eee;
+      border-right: 2px solid #ddd;
+      border-top: 2px solid #ddd;
      }
      #question {
       margin-bottom: 0.5em;
@@ -28,9 +31,47 @@
       color: #b9b9b9;
       margin-left: 1em;
      }
+     #splash {
+      position: relative;
+      z-index: 3;
+      padding: 2em;
+      background-color: white;
+      border-bottom: 2px solid #ddd;
+     }
+     #splash button {
+      display: block;
+      margin-top: 2em;
+      color: white;
+      background-color: #3172d8;
+      border: 2px solid #244964;
+      border-radius: 4px;
+      padding:0.5em 1em 0.5em 1em;
+      font-weight: bold;
+      font-size: 0.8em;
+      cursor: pointer;
+     }
+     #splash button:hover {
+      background-color: #3a87ff;
+     }
+     #splash h1 {
+      color: #3172d8;
+      margin-bottom: 0;
+     }
+     #splash #signature {
+      font-style: italic;
+     }
   </style>
   </head>
   <body>
+  <div id="splash">
+    <h1>Une mappe d'idées pour le Québec</h1>
+    <p id="signature">Par <a href="http://lemairecarl.github.io">Carl Lemaire</a></p>
+    <p>Voici une disposition sous forme de mappe des données ouvertes ammassées lors du projet <a href="https://fautquonseparle.org/presse">Faut qu'on se parle</a>.
+      Chaque idée que vous verrez ci-bas est une réponse à une des dix questions posées par <i>Faut qu'on se parle</i>.
+      Les idées similaires se retrouvent proches les unes des autres. Parfois, cependant, la proximité n'est pas proportionelle à la similarité (un peu comme le Québec et l'Ontario).
+      Cette représentation n'est pas parfaite; d'ailleurs, les données elles-mêmes sont « très brutes ».</p>
+    <button onclick="document.getElementById('splash').style.visibility = 'hidden'">Fermer ce panneau</button>
+  </div>
   <div id="panneau">
     <div id="question">
       <span id="qtext"></span>
