@@ -40,13 +40,14 @@ function setup() {
     scale = 40.0;
     zoom = 0.2;
     zoomSpeed = 0.01;
-    zoomExtent = [0.2, 20.0]
+    zoomExtent = [0.2, 20.0];
 
-    windowOrigin = [windowWidth / 2, windowHeight / 2]
-    worldOrigin = [0.0, 0.0]
-    curseur = [0.0, 0.0]
+    windowOrigin = [windowWidth / 2, windowHeight / 2];
+    worldOrigin = [0.0, 0.0];
     isDragging = false;
-    dragStart = [0.0, 0.0]
+    dragStart = [0.0, 0.0];
+    curseur = [-1000, -1000];
+    activerCurseur = false;
 
     shuffleWait = false;
     oldClosest = -1;
@@ -186,7 +187,7 @@ function mouseReleased() {
     isDragging = false;
     if (sqDist(mouseCoord(), dragStart) < 16.0) {
         // Register as a click
-        curseur = windowToWorld(mouseCoord());
+        if (activerCurseur) curseur = windowToWorld(mouseCoord());
     }
 }
 
