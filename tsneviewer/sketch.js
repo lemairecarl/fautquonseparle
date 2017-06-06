@@ -28,6 +28,7 @@ function setup() {
     textLong = jsondata.long;
     vecs = jsondata.vecs;
     q = jsondata.q;
+    ansId = jsondata['id'];
 
     // Shuffling the order of display for justice
     order = [];
@@ -86,8 +87,9 @@ function draw() {
     drawWord(closest, true);
 
     if (closest != oldClosest) {
-        document.getElementById('question').innerHTML = questionLabels[q[closest]];
-        document.getElementById('question').setAttribute('style', 'border-left: 10px solid ' + colorPalette[q[closest]])
+        document.getElementById('qtext').innerHTML = questionLabels[q[closest]];
+        document.getElementById('ans_id').innerHTML = ansId[closest];
+        document.getElementById('question').setAttribute('style', 'border-left: 10px solid ' + colorPalette[q[closest]]);
         document.getElementById('reponse').innerHTML = textLong[closest];
     }
     oldClosest = closest;

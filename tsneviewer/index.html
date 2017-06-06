@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
   <head>
     <script src="//cdnjs.cloudflare.com/ajax/libs/p5.js/0.5.11/p5.js"></script>
@@ -17,15 +17,26 @@
       border-right: 2px solid #eee;
       border-top: 2px solid #eee;
      }
-
      #question {
       margin-bottom: 0.5em;
-      font-weight: bold;
       padding-left: 0.5em;
+     }
+     #qtext {
+      font-weight: bold;
+     }
+     #idlabel {
+      color: #b9b9b9;
+      margin-left: 1em;
      }
   </style>
   </head>
   <body>
-  <div id="panneau"><div id="question"></div><div id="reponse"></div></div>
+  <div id="panneau">
+    <div id="question">
+      <span id="qtext"></span>
+      <span id="idlabel">Rép. #<span id="ans_id"></span></span>
+    </div>
+    <div id="reponse"></div>
+  </div>
   </body>
 </html>

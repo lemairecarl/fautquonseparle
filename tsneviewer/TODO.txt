@@ -1,5 +1,0 @@
-- shuffle pour ne pas favoriser lors de l optimisation zoom?
-- empecher retour a la ligne
-- json: version courte et version longue
-- montrer texte complet, id, intitulé question
-- légende couleurs
