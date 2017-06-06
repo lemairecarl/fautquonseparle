@@ -47,8 +47,10 @@ function setup() {
     isDragging = false;
     dragStart = [0.0, 0.0];
     curseur = [-1000, -1000];
-    activerCurseur = false;
+    isMouseOnUI = true;
     epingles = [];
+    focusedPin = -1;
+    focusStart = null;
 
     shuffleWait = false;
     oldClosest = -1;
@@ -94,7 +96,12 @@ function draw() {
     for (var i = 0; i < epingles.length; i++) {
         fill('red');
         pinWindow = worldToWindow(epingles[i]);
-        ellipse(pinWindow[0], pinWindow[1], 20);
+
+        radius = 20;
+        if (i == focusedPin) {
+            radius = 20.0 + 6.0 * (1.0 - Math.cos(PI * 0.002 * (Date.now() - focusStart)));
+        }
+        ellipse(pinWindow[0], pinWindow[1], radius);
     }
 
     // Dessiner le curseur
@@ -165,7 +172,15 @@ function mouseCoord() {
     return [mouseX, mouseY];
 }
 
+function windowCenter() {
+    return [windowWidth / 2, windowHeight / 2];
+}
+
 function mouseWheel(event) {
+    if (isMouseOnUI) {
+        return true;
+    }
+
     // Shift the origins to the current mouse pos, so the zoom is natural
     worldOrigin = windowToWorld(mouseCoord());
     windowOrigin = mouseCoord();
@@ -196,7 +211,7 @@ function mouseReleased() {
 
     if (sqDist(mouseCoord(), dragStart) < 16.0) {
         // Register as a click
-        if (activerCurseur) curseur = windowToWorld(mouseCoord());
+        if (!isMouseOnUI) curseur = windowToWorld(mouseCoord());
     }
 }
 
@@ -208,7 +223,34 @@ function mouseDragged() {
 }
 
 function epingler () {
+    if (curseur[0] < -900) {
+        // Initialiser le curseur au centre
+        curseur = [0.0, 0.0];
+    }
+
     epingles.push(vecCopy(curseur));
+    majPinList();
+}
+
+function majPinList() {
+    pinList = document.getElementById('pinlist');
+    pinList.innerHTML = '';
+    for (var i = 0; i < epingles.length; i++) {
+        pinList.innerHTML += '<li onclick="focusPin(' + i + ')">Épingle ' + (i+1) + '</li>';
+    }
+}
+
+function focusPin(i) {
+    worldOrigin = epingles[i];
+    windowOrigin = windowCenter();
+    focusedPin = i;
+
+    focusStart = Date.now();
+    setTimeout(function(){
+        if (focusedPin == i) {
+            focusedPin = -1;
+        }
+        }, 2000);
 }
 
 function shuffleDisplay() {

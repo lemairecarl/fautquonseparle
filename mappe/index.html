@@ -68,6 +68,7 @@
       z-index: 2;
       background-color: white;
       padding: 0.5em;
+      max-width: 8em;
 
       cursor: default;
       -webkit-user-select: none; /* Safari */
@@ -79,10 +80,29 @@
      #pins button {
       cursor: pointer;
      }
+     #pins ul {
+      list-style-type: none;
+      padding-left: 0;
+      margin-bottom: 0;
+      max-height: 300px;
+      overflow-y: scroll;
+      font-size: 0.8em;
+     }
+     #pins ul li {
+      padding:0.3em;
+      border-top:1px solid #ddd;
+      cursor: pointer;
+     }
+     #pins ul li:hover {
+      background-color: #eee;
+     }
+     #pins ul li:first-child {
+      border-top: none;
+     }
   </style>
   </head>
   <body>
-  <div id="splash">
+  <div id="splash" onmouseenter="isMouseOnUI = true;" onmouseleave="isMouseOnUI = false;">
     <h1>Une mappe d'idées pour le Québec</h1>
     <p id="signature">Par <a href="http://lemairecarl.github.io">Carl Lemaire</a></p>
     <p>Voici une disposition sous forme de mappe des données ouvertes amassées lors du projet <a href="https://www.facebook.com/fautquonseparle/">Faut qu'on se parle</a>.
@@ -90,7 +110,7 @@
       Les idées similaires se retrouvent proches les unes des autres. Parfois, cependant, la proximité n'est pas proportionnelle à la similarité (un peu comme le Québec et l'Ontario).
       Cette représentation n'est pas parfaite; d'ailleurs, les données elles-mêmes sont « très brutes ».</p>
     <p>Naviguez cette mappe de la même façon que <i>Google Maps</i>: <b>Cliquer-glisser pour déplacer, utiliser la roulette pour contrôler le zoom.</b></p>
-    <button onclick="(function cacher(){ document.getElementById('splash').style.visibility = 'hidden'; activerCurseur = true; })();">Fermer ce panneau</button>
+    <button onclick="(function cacher(){ document.getElementById('splash').style.visibility = 'hidden'; isMouseOnUI = false; })();">Fermer ce panneau</button>
   </div>
   <div id="panneau">
     <div id="question">
@@ -99,9 +119,10 @@
     </div>
     <div id="reponse"></div>
   </div>
-  <div id="pins" onmouseenter="activerCurseur = false;" onmouseleave="activerCurseur = true;">
+  <div id="pins" onmouseenter="isMouseOnUI = true;" onmouseleave="isMouseOnUI = false;">
     <strong>Épingles</strong>
     <button onclick="epingler()">＋</button>
+    <ul id="pinlist">Cliquez sur ＋ pour ajouter une épingle.</ul>
   </div>
   </body>
 </html>
