@@ -48,12 +48,22 @@ function setup() {
     dragStart = [0.0, 0.0];
     curseur = [-1000, -1000];
     isMouseOnUI = true;
-    epingles = [];
+
+    epingles = []
+    initEpingles();
     focusedPin = -1;
     focusStart = null;
 
     shuffleWait = false;
     oldClosest = -1;
+}
+
+function initEpingles() {
+    pinstr = decodeURI(window.location.hash.substring(1));
+    if (pinstr != '') {
+        epingles = JSON.parse(pinstr);
+        majPinList();
+    }
 }
 
 function draw() {
@@ -243,6 +253,7 @@ function majPinList() {
     for (var i = 0; i < epingles.length; i++) {
         pinList.innerHTML += '<li onclick="focusPin(' + i + ')">Épingle ' + (i+1) + '</li>';
     }
+    window.location.hash = '#' + encodeURI(JSON.stringify(epingles));
 }
 
 function focusPin(i) {
@@ -256,6 +267,11 @@ function focusPin(i) {
             focusedPin = -1;
         }
         }, 2000);
+}
+
+function partager() {
+    lien = window.location;
+    window.prompt("Copiez et partagez ce lien! Et buvez-en tous!", lien);
 }
 
 function shuffleDisplay() {
