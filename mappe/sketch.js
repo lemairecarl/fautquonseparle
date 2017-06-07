@@ -298,7 +298,7 @@ function delPin(i) {
 
 function partager() {
     lien = window.location;
-    window.prompt("Copiez et partagez ce lien! Et buvez-en tous!", lien);
+    window.prompt("Partagez vos épingles en copiant ce lien:", lien);
 }
 
 function shuffleDisplay() {
