@@ -64,6 +64,7 @@ function initEpingles() {
     hashstr = window.location.hash.substring(1);
     cookiestr = getCookie('epingles');
 
+    pinstr = '';
     if (hashstr != '') {
         // Vérifier d'abord l'url
         pinstr = hashstr;
@@ -72,8 +73,10 @@ function initEpingles() {
         pinstr = cookiestr;
     }
 
-    epingles = JSON.parse(decodeURI(pinstr));
-    if (epingles.length != 0) majPinList();
+    if (pinstr != '') {
+        epingles = JSON.parse(decodeURI(pinstr));
+        if (epingles.length != 0) majPinList();
+    }
 }
 
 function draw() {
